@@ -468,7 +468,7 @@ include __DIR__ . '/header.php';
         .poem-text label:has(input[type="checkbox"]:checked)::after {
             content: '';
             position: absolute;
-            left: 13px;
+            left: 15px;
             top: 50%;
             width: 5px;
             height: 10px;
@@ -503,6 +503,15 @@ include __DIR__ . '/header.php';
         .poem-text label:has(input[type="checkbox"]:disabled:checked) {
             cursor: default;
             pointer-events: none;
+            /* Текст и фон остаются активными */
+        }
+        /* Серый чекбокс для disabled:checked */
+        .poem-text label:has(input[type="checkbox"]:disabled:checked)::before {
+            background: #9ca3af !important;
+            border-color: #9ca3af !important;
+        }
+        .poem-text label:has(input[type="checkbox"]:disabled:checked)::after {
+            border-color: white !important;
         }
         .textSizeNormal {
             font-size: 14px;
@@ -536,11 +545,11 @@ include __DIR__ . '/header.php';
             margin-left: 30px;
         }
         .verse-line {
-            margin-bottom: 2px;
-            line-height: 1.6;
+            margin-bottom: 0;
+            line-height: 1.4;
         }
         .verse-line.paragraph-end {
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         .mobile-controls {
             margin: 0 20px 25px;
