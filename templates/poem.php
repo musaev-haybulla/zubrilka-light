@@ -337,6 +337,61 @@ include __DIR__ . '/header.php';
             }
         }
         
+        // Быстрый выбор: выбрать куплет
+        function selectStanza() {
+            // Находим первую выбранную строку
+            var selectedIndex = -1;
+            for (i = 0; i < countCheck; i++) {
+                if (document.getElementById('partition_'+i).checked) {
+                    selectedIndex = i;
+                    break;
+                }
+            }
+            if (selectedIndex === -1) return; // Ничего не выбрано
+            
+            // Находим начало куплета (идём вверх до paragraph-end предыдущего куплета)
+            var stanzaStart = 0;
+            for (i = selectedIndex - 1; i >= 0; i--) {
+                var verseDiv = document.getElementById('partition_'+i).closest('.verse-line');
+                if (verseDiv && verseDiv.classList.contains('paragraph-end')) {
+                    stanzaStart = i + 1;
+                    break;
+                }
+            }
+            
+            // Находим конец куплета (идём вниз до paragraph-end)
+            var stanzaEnd = countCheck - 1;
+            for (i = selectedIndex; i < countCheck; i++) {
+                var verseDiv = document.getElementById('partition_'+i).closest('.verse-line');
+                if (verseDiv && verseDiv.classList.contains('paragraph-end')) {
+                    stanzaEnd = i;
+                    break;
+                }
+            }
+            
+            // Выделяем весь куплет
+            for (i = stanzaStart; i <= stanzaEnd; i++) {
+                document.getElementById('partition_'+i).checked = true;
+            }
+            setCheck();
+        }
+        
+        // Быстрый выбор: выбрать всё
+        function selectAll() {
+            for (i = 0; i < countCheck; i++) {
+                document.getElementById('partition_'+i).checked = true;
+            }
+            setCheck();
+        }
+        
+        // Быстрый выбор: снять выделение
+        function clearSelection() {
+            for (i = 0; i < countCheck; i++) {
+                document.getElementById('partition_'+i).checked = false;
+            }
+            setCheck();
+        }
+        
         function gainChange() {
             var volume = parseFloat(document.getElementById('points').value);
             if (sound) {
@@ -550,6 +605,39 @@ include __DIR__ . '/header.php';
         }
         .verse-line.paragraph-end {
             margin-bottom: 12px;
+        }
+        /* Панель быстрого выбора */
+        .quick-selection-panel {
+            margin: 0 0 20px 30px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .quick-btn {
+            padding: 8px 16px;
+            border: 1px solid #d1fae5;
+            border-radius: 8px;
+            background: #f0fdf4;
+            color: #166534;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quick-btn:hover {
+            background: #dcfce7;
+            border-color: #86efac;
+            color: #14532d;
+        }
+        .quick-btn-clear {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #dc2626;
+        }
+        .quick-btn-clear:hover {
+            background: #fee2e2;
+            border-color: #fca5a5;
+            color: #b91c1c;
         }
         .mobile-controls {
             margin: 0 20px 25px;
@@ -787,6 +875,10 @@ include __DIR__ . '/header.php';
                 </div>
             </div>
             <div class="col-md-8 col-sm-8 col-xs-12">
+                <div class="quick-selection-panel">
+                    <button class="quick-btn" onclick="selectAll()">Выбрать всё</button>
+                    <button class="quick-btn quick-btn-clear" onclick="clearSelection()">Снять выделение</button>
+                </div>
                 <div class="poem-text">
                     <?php foreach($verses as $key => $verse): ?>
                         <div class="verse-line <?= $verse['is_paragraph_end'] ? 'paragraph-end' : '' ?>">
