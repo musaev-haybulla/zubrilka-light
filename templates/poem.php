@@ -3,6 +3,10 @@ $extra_fonts = true;
 include __DIR__ . '/header.php'; 
 ?>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&display=swap" rel="stylesheet">
+
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
     <script src="<?= asset('js/my.js') ?>"></script>
@@ -120,6 +124,18 @@ include __DIR__ . '/header.php';
                     if(first == null) {
                         first = current;
                     }
+                }
+            }
+            
+            // Обновляем состояние toggle-кнопки
+            var btn = document.getElementById('toggleSelectBtn');
+            if (btn) {
+                if (flag === 0) {
+                    btn.querySelector('.toggle-text').textContent = 'Выбрать всё';
+                    btn.classList.remove('active');
+                } else {
+                    btn.querySelector('.toggle-text').textContent = 'Снять выделение';
+                    btn.classList.add('active');
                 }
             }
             
@@ -376,21 +392,30 @@ include __DIR__ . '/header.php';
             setCheck();
         }
         
-        // Быстрый выбор: выбрать всё
-        function selectAll() {
-            for (i = 0; i < countCheck; i++) {
-                document.getElementById('partition_'+i).checked = true;
+        // Toggle: выбрать всё / снять выделение
+        function toggleSelection() {
+            var btn = document.getElementById('toggleSelectBtn');
+            
+            // Проверяем текущее состояние кнопки
+            if (btn.classList.contains('active')) {
+                // Снять все
+                for (i = 0; i < countCheck; i++) {
+                    document.getElementById('partition_'+i).checked = false;
+                }
+            } else {
+                // Выбрать все
+                for (i = 0; i < countCheck; i++) {
+                    document.getElementById('partition_'+i).checked = true;
+                }
             }
+            
             setCheck();
         }
         
-        // Быстрый выбор: снять выделение
-        function clearSelection() {
-            for (i = 0; i < countCheck; i++) {
-                document.getElementById('partition_'+i).checked = false;
-            }
-            setCheck();
-        }
+        // Очищаем старый выбор шрифта из localStorage
+        window.addEventListener('DOMContentLoaded', function() {
+            localStorage.removeItem('selectedFont');
+        });
         
         function gainChange() {
             var volume = parseFloat(document.getElementById('points').value);
@@ -459,19 +484,55 @@ include __DIR__ . '/header.php';
     </script>
             
     <style>
+        /* Глобальные шрифты */
+        body {
+            font-family: 'Lato', sans-serif;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Lato', sans-serif;
+            font-weight: 700;
+        }
+        h1.page-header {
+            font-family: 'Lato', sans-serif;
+            font-weight: 900;
+        }
+        h1.page-header small {
+            font-family: 'Lato', sans-serif;
+            font-weight: 300;
+            font-style: italic;
+        }
+        .btn, button, input, select, textarea, label {
+            font-family: 'Lato', sans-serif;
+        }
+        /* Название стихотворения */
+        h2 {
+            font-family: 'Lato', sans-serif;
+            font-weight: 700;
+        }
+        
         .label_partition_check,
-        .label_partition_check span,
-        .label_partition_uncheck,
-        .label_partition_uncheck span {
+        .label_partition_check span {
             color: #000;
             font-size: 29px;
+            font-family: 'Lora', serif !important;
+        }
+        .label_partition_uncheck,
+        .label_partition_uncheck span {
+            color: #555;
+            font-size: 29px;
+            font-family: 'Lora', serif !important;
         }
         .label_partition_check_big,
-        .label_partition_check_big span,
-        .label_partition_uncheck_big,
-        .label_partition_uncheck_big span {
+        .label_partition_check_big span {
             color: #000;
             font-size: 34px;
+            font-family: 'Lora', serif !important;
+        }
+        .label_partition_uncheck_big,
+        .label_partition_uncheck_big span {
+            color: #555;
+            font-size: 34px;
+            font-family: 'Lora', serif !important;
         }
         /* HeroUI стиль чекбоксов для строк стиха */
         .poem-text label {
@@ -484,6 +545,10 @@ include __DIR__ . '/header.php';
             position: relative;
             user-select: none;
             border-radius: 6px;
+            font-family: 'Lora', serif !important;
+        }
+        .poem-text label span {
+            font-family: 'Lora', serif !important;
         }
         .poem-text label:hover {
             background: #e6f3ff;
@@ -506,7 +571,7 @@ include __DIR__ . '/header.php';
             display: inline-block;
             width: 20px;
             height: 20px;
-            margin-right: 12px;
+            margin-right: 16px;
             border: 2px solid #d4d4d8;
             border-radius: 6px;
             background: transparent;
@@ -572,21 +637,29 @@ include __DIR__ . '/header.php';
             font-size: 14px;
             color: #e75e65;
             text-decoration: none;
-            border-bottom: 1px dotted #e75e65; 
+            border-bottom: 1px dotted #e75e65;
+            font-family: 'Lato', sans-serif;
+            font-weight: 600;
         }
         .textSizeNormalActive {
             font-size: 14px;
             font-color: #333;
+            font-family: 'Lato', sans-serif;
+            font-weight: 600;
         }
         .textSizeBig {
             font-size: 18px;
             color: #e75e65;
             text-decoration: none;
-            border-bottom: 1px dotted #e75e65;  
+            border-bottom: 1px dotted #e75e65;
+            font-family: 'Lato', sans-serif;
+            font-weight: 600;
         }
         .textSizeBigActive {
             font-size: 18px;
             font-color: #333;
+            font-family: 'Lato', sans-serif;
+            font-weight: 600;
         }
         .textSizeNormal:hover {
             cursor: pointer;
@@ -598,13 +671,45 @@ include __DIR__ . '/header.php';
         }
         .poem-text {
             margin-left: 30px;
+            font-family: 'Lora', serif !important;
         }
         .verse-line {
-            margin-bottom: 0;
-            line-height: 1.4;
+            margin-bottom: 6px;
+            line-height: 1.2;
         }
         .verse-line.paragraph-end {
-            margin-bottom: 12px;
+            margin-bottom: 0;
+        }
+        /* Разделители куплетов */
+        .stanza-divider {
+            display: flex;
+            align-items: center;
+            margin: 16px 0;
+            position: relative;
+        }
+        .stanza-divider::before {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #e5e7eb 20%, #e5e7eb 80%, transparent);
+            margin-right: 12px;
+        }
+        .stanza-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to left, transparent, #e5e7eb 20%, #e5e7eb 80%, transparent);
+            margin-left: 12px;
+        }
+        .stanza-number {
+            font-family: 'Lato', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            color: #9ca3af;
+            background: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            letter-spacing: 0.5px;
         }
         /* Панель быстрого выбора */
         .quick-selection-panel {
@@ -612,29 +717,32 @@ include __DIR__ . '/header.php';
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            align-items: center;
         }
-        .quick-btn {
-            padding: 8px 16px;
+        .quick-btn-toggle {
+            padding: 8px 20px;
             border: 1px solid #d1fae5;
             border-radius: 8px;
             background: #f0fdf4;
             color: #166534;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
+            font-family: 'Lato', sans-serif;
             cursor: pointer;
             transition: all 0.2s;
+            position: relative;
         }
-        .quick-btn:hover {
+        .quick-btn-toggle:hover {
             background: #dcfce7;
             border-color: #86efac;
             color: #14532d;
         }
-        .quick-btn-clear {
+        .quick-btn-toggle.active {
             background: #fef2f2;
             border-color: #fecaca;
             color: #dc2626;
         }
-        .quick-btn-clear:hover {
+        .quick-btn-toggle.active:hover {
             background: #fee2e2;
             border-color: #fca5a5;
             color: #b91c1c;
@@ -876,17 +984,34 @@ include __DIR__ . '/header.php';
             </div>
             <div class="col-md-8 col-sm-8 col-xs-12">
                 <div class="quick-selection-panel">
-                    <button class="quick-btn" onclick="selectAll()">Выбрать всё</button>
-                    <button class="quick-btn quick-btn-clear" onclick="clearSelection()">Снять выделение</button>
+                    <button class="quick-btn-toggle" id="toggleSelectBtn" onclick="toggleSelection()">
+                        <span class="toggle-text">Выбрать всё</span>
+                    </button>
                 </div>
                 <div class="poem-text">
-                    <?php foreach($verses as $key => $verse): ?>
+                    <?php 
+                    $stanza_number = 1;
+                    foreach($verses as $key => $verse): 
+                    ?>
+                        <?php if ($key === 0): ?>
+                            <div class="stanza-divider">
+                                <span class="stanza-number"><?= $stanza_number ?></span>
+                            </div>
+                        <?php endif; ?>
+                        
                         <div class="verse-line <?= $verse['is_paragraph_end'] ? 'paragraph-end' : '' ?>">
                             <label id='label_partition_<?= $key ?>' for='partition_<?= $key ?>'>
                                 <input type='checkbox' id='partition_<?= $key ?>' onChange='setCheck();'>
                                 <span><?= h($verse['text']) ?></span>
                             </label>
                         </div>
+                        
+                        <?php if ($verse['is_paragraph_end'] && $key < count($verses) - 1): ?>
+                            <?php $stanza_number++; ?>
+                            <div class="stanza-divider">
+                                <span class="stanza-number"><?= $stanza_number ?></span>
+                            </div>
+                        <?php endif; ?>
                     <?php endforeach; ?>
                 </div>   
             </div>
