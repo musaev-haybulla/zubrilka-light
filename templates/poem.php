@@ -434,13 +434,15 @@ include __DIR__ . '/header.php';
         // Подсветка текущей строки при воспроизведении
         var highlightInterval = null;
         var currentStanzaNumber = null;
+        var isHighlightingActive = false; // Флаг активности
         
         function startHighlighting() {
             if (highlightInterval) return; // Уже запущено
             currentStanzaNumber = null; // Сброс при старте
+            isHighlightingActive = true;
             
             highlightInterval = setInterval(function() {
-                if (sound && sound.playing()) {
+                if (sound && sound.playing() && isHighlightingActive) {
                     var currentTime = sound.seek();
                     highlightCurrentLine(currentTime);
                 }
@@ -448,15 +450,20 @@ include __DIR__ . '/header.php';
         }
         
         function stopHighlighting() {
+            isHighlightingActive = false; // Сначала отключаем флаг
+            
             if (highlightInterval) {
                 clearInterval(highlightInterval);
                 highlightInterval = null;
             }
             currentStanzaNumber = null;
-            // Убираем подсветку со всех строк
-            document.querySelectorAll('.verse-line').forEach(function(line) {
-                line.classList.remove('current');
-            });
+            
+            // Небольшая задержка перед удалением подсветки
+            setTimeout(function() {
+                document.querySelectorAll('.verse-line').forEach(function(line) {
+                    line.classList.remove('current');
+                });
+            }, 50);
         }
         
         function getStanzaNumber(line) {
@@ -473,6 +480,9 @@ include __DIR__ . '/header.php';
         }
         
         function highlightCurrentLine(currentTime) {
+            // Не обрабатываем если подсветка неактивна
+            if (!isHighlightingActive) return;
+            
             var found = false;
             document.querySelectorAll('.verse-line').forEach(function(line) {
                 var start = parseFloat(line.dataset.start);
@@ -487,7 +497,7 @@ include __DIR__ . '/header.php';
                         var stanzaNum = getStanzaNumber(line);
                         
                         // Скроллим только при смене куплета или первом запуске
-                        if (currentStanzaNumber === null || currentStanzaNumber !== stanzaNum) {
+                        if (isHighlightingActive && (currentStanzaNumber === null || currentStanzaNumber !== stanzaNum)) {
                             currentStanzaNumber = stanzaNum;
                             line.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
