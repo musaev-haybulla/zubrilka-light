@@ -416,54 +416,62 @@ include __DIR__ . '/header.php';
             color: #ccc;
             font-size: 34px;
         }
-        /* Кастомные чекбоксы для строк стиха */
+        /* HeroUI стиль чекбоксов для строк стиха */
         .poem-text label {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             cursor: pointer;
-            padding: 8px 0;
+            padding: 10px 12px;
             transition: all 0.2s;
             position: relative;
             margin-left: 39px;
+            user-select: none;
         }
         .poem-text label:hover {
-            background: #f0f8ff;
-            padding-left: 10px;
-            border-radius: 8px;
+            opacity: 0.8;
         }
         .poem-text input[type="checkbox"] {
             position: absolute;
             opacity: 0;
             cursor: pointer;
+            width: 0;
+            height: 0;
         }
+        /* Чекбокс контейнер */
         .poem-text label::before {
             content: '';
             display: inline-block;
-            width: 32px;
-            height: 32px;
-            margin-right: 15px;
-            border: 3px solid #ddd;
-            border-radius: 8px;
-            background: #fff;
-            transition: all 0.3s;
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            border: 2px solid #d4d4d8;
+            border-radius: 6px;
+            background: transparent;
+            transition: all 0.15s ease;
             flex-shrink: 0;
             position: relative;
         }
+        /* Checked состояние */
         .poem-text label:has(input[type="checkbox"]:checked)::before {
-            background: #5cb85c;
-            border-color: #4cae4c;
-            box-shadow: 0 2px 8px rgba(92, 184, 92, 0.4);
+            background: #006FEE;
+            border-color: #006FEE;
         }
+        /* Галочка */
         .poem-text label:has(input[type="checkbox"]:checked)::after {
-            content: '✓';
+            content: '';
             position: absolute;
-            left: 8px;
+            left: 19px;
             top: 50%;
-            transform: translateY(-50%);
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            pointer-events: none;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: translateY(-50%) rotate(45deg);
+            margin-top: -1px;
+        }
+        /* Hover на чекбоксе */
+        .poem-text label:hover::before {
+            border-color: #006FEE;
         }
         .textSizeNormal {
             font-size: 14px;
