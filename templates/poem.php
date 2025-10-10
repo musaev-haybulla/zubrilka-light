@@ -869,8 +869,9 @@ include __DIR__ . '/header.php';
         }
         .mobile-speed-buttons {
             display: flex;
-            justify-content: space-between;
-            gap: 6px;
+            justify-content: flex-start;
+            gap: 4px;
+            flex-wrap: wrap;
         }
         .desktop-controls {
             margin-left: 52px;
@@ -937,7 +938,7 @@ include __DIR__ . '/header.php';
         .desktop-speed-buttons {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
+            gap: 4px;
         }
         .poem-title {
             text-align: center;
@@ -977,30 +978,31 @@ include __DIR__ . '/header.php';
         }
         .speed-btn {
             cursor: pointer;
-            border: 3px solid #ddd;
-            border-radius: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
             background: #fff;
-            transition: all 0.2s;
-            font-size: 18px;
-            font-weight: 600;
-            min-width: 65px;
-            height: 49px;
-            margin: 4px;
-            padding: 7px 10px;
+            transition: all 0.15s ease;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: 'Lato', sans-serif;
+            min-width: 48px;
+            height: 32px;
+            margin: 0 3px;
+            padding: 4px 10px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            color: #4b5563;
         }
         .speed-btn:hover {
-            background: #f5f5f5;
-            border-color: #999;
-            transform: scale(1.1);
+            background: #f3f4f6;
+            border-color: #9ca3af;
         }
         .speed-btn.active {
-            background: #5cb85c !important;
-            border-color: #4cae4c !important;
-            box-shadow: 0 2px 8px rgba(92, 184, 92, 0.4);
-            transform: scale(1.15);
+            background: #10b981;
+            border-color: #10b981;
+            color: white;
+            font-weight: 600;
         }
     </style>
 
