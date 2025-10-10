@@ -1,0 +1,4 @@
+AuthType Basic
+AuthName "Админ-панель Зубрилки"
+AuthUserFile /var/www/html/admin/.htpasswd
+Require valid-user

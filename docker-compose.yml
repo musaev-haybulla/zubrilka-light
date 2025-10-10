@@ -1,0 +1,51 @@
+services:
+  web:
+    image: php:8.1-apache
+    container_name: poems-web
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - db
+    environment:
+      - APACHE_DOCUMENT_ROOT=/var/www/html
+    command: >
+      bash -c "docker-php-ext-install pdo pdo_mysql mysqli &&
+               a2enmod rewrite &&
+               echo 'default_charset = \"UTF-8\"' > /usr/local/etc/php/conf.d/charset.ini &&
+               echo 'mbstring.internal_encoding = UTF-8' >> /usr/local/etc/php/conf.d/charset.ini &&
+               echo 'upload_max_filesize = 50M' >> /usr/local/etc/php/conf.d/uploads.ini &&
+               echo 'post_max_size = 50M' >> /usr/local/etc/php/conf.d/uploads.ini &&
+               apache2-foreground"
+
+  db:
+    image: mysql:8.0
+    container_name: poems-db
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: poems_db
+      MYSQL_USER: poems
+      MYSQL_PASSWORD: poems
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./initial_data.sql:/docker-entrypoint-initdb.d/02-initial-data.sql
+    command: --default-authentication-plugin=mysql_native_password
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: poems-phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: root
+    depends_on:
+      - db
+
+volumes:
+  db_data:
