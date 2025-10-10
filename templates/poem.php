@@ -416,6 +416,55 @@ include __DIR__ . '/header.php';
             color: #ccc;
             font-size: 34px;
         }
+        /* Кастомные чекбоксы для строк стиха */
+        .poem-text label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 8px 0;
+            transition: all 0.2s;
+            position: relative;
+            margin-left: 39px;
+        }
+        .poem-text label:hover {
+            background: #f0f8ff;
+            padding-left: 10px;
+            border-radius: 8px;
+        }
+        .poem-text input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .poem-text label::before {
+            content: '';
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            margin-right: 15px;
+            border: 3px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            transition: all 0.3s;
+            flex-shrink: 0;
+            position: relative;
+        }
+        .poem-text label:has(input[type="checkbox"]:checked)::before {
+            background: #5cb85c;
+            border-color: #4cae4c;
+            box-shadow: 0 2px 8px rgba(92, 184, 92, 0.4);
+        }
+        .poem-text label:has(input[type="checkbox"]:checked)::after {
+            content: '✓';
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            pointer-events: none;
+        }
         .textSizeNormal {
             font-size: 14px;
             color: #e75e65;
@@ -445,7 +494,7 @@ include __DIR__ . '/header.php';
             color: #ff827d;
         }
         .poem-text {
-            margin-left: 39px;
+            margin-left: 0;
         }
         .mobile-controls {
             margin: 0 20px 25px;
@@ -687,7 +736,7 @@ include __DIR__ . '/header.php';
                     <?php foreach($verses as $key => $verse): ?>
                         <label id='label_partition_<?= $key ?>' for='partition_<?= $key ?>'>
                             <input type='checkbox' id='partition_<?= $key ?>' onChange='setCheck();'>
-                            &nbsp;<?= h($verse['text']) ?>
+                            <span><?= h($verse['text']) ?></span>
                         </label>
                         <br />
                         <?php if ($verse['is_paragraph_end']): ?>
