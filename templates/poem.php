@@ -402,19 +402,19 @@ include __DIR__ . '/header.php';
     <style>
         .label_partition_check {
             color: #000;
-            font-size: 22px;
+            font-size: 29px;
         }
         .label_partition_uncheck {
             color: #ccc;
-            font-size: 22px;
+            font-size: 29px;
         }
         .label_partition_check_big {
             color: #000;
-            font-size: 26px;
+            font-size: 34px;
         }
         .label_partition_uncheck_big {
             color: #ccc;
-            font-size: 26px;
+            font-size: 34px;
         }
         .textSizeNormal {
             font-size: 14px;
@@ -445,7 +445,7 @@ include __DIR__ . '/header.php';
             color: #ff827d;
         }
         .poem-text {
-            margin-left: 30px;
+            margin-left: 39px;
         }
         .mobile-controls {
             margin: 0 20px 25px;
@@ -492,12 +492,12 @@ include __DIR__ . '/header.php';
             gap: 6px;
         }
         .desktop-controls {
-            margin-left: 40px;
-            padding: 20px;
+            margin-left: 52px;
+            padding: 26px;
             border: 1px solid #e0e0e0;
-            border-radius: 10px;
+            border-radius: 13px;
             background: #f9fafb;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
         }
         .desktop-top-row {
             display: flex;
@@ -510,20 +510,20 @@ include __DIR__ . '/header.php';
         .desktop-loop {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             font-weight: 500;
-            font-size: 15px;
+            font-size: 19px;
         }
         .desktop-loop input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
+            width: 23px;
+            height: 23px;
             cursor: pointer;
         }
         .desktop-textsize {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 15px;
+            gap: 10px;
+            font-size: 19px;
         }
         .desktop-textsize .divider {
             color: #bbb;
@@ -532,12 +532,12 @@ include __DIR__ . '/header.php';
             margin: 15px 0;
         }
         .desktop-volume > label {
-            font-size: 12px;
+            font-size: 16px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: #888;
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .desktop-volume input[type="range"] {
             width: 100%;
@@ -546,12 +546,12 @@ include __DIR__ . '/header.php';
             margin-top: 15px;
         }
         .desktop-speed > label {
-            font-size: 12px;
+            font-size: 16px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: #888;
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .desktop-speed-buttons {
             display: flex;
@@ -560,8 +560,8 @@ include __DIR__ . '/header.php';
         }
         .poem-title {
             text-align: center;
-            margin: 20px 0 10px;
-            font-size: 32px;
+            margin: 26px 0 13px;
+            font-size: 42px;
             font-weight: 600;
             color: #2c3e50;
         }
@@ -596,16 +596,16 @@ include __DIR__ . '/header.php';
         }
         .speed-btn {
             cursor: pointer;
-            border: 2px solid #ddd;
-            border-radius: 8px;
+            border: 3px solid #ddd;
+            border-radius: 10px;
             background: #fff;
             transition: all 0.2s;
-            font-size: 14px;
+            font-size: 18px;
             font-weight: 600;
-            min-width: 50px;
-            height: 38px;
-            margin: 3px;
-            padding: 5px 8px;
+            min-width: 65px;
+            height: 49px;
+            margin: 4px;
+            padding: 7px 10px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -647,7 +647,7 @@ include __DIR__ . '/header.php';
                 <h3>Описание</h3>
             </div>
             <div class="col-md-10">
-                <p style="font-size: 18px; font-family: 'PT Sans'; margin-top: 20px; margin-left: 30px; text-align: justify; border-left: 2px solid #ccc; padding-left: 20px;">
+                <p style="font-size: 23px; font-family: 'PT Sans'; margin-top: 26px; margin-left: 39px; text-align: justify; border-left: 3px solid #ccc; padding-left: 26px;">
                     <?= h($description) ?>
                 </p>
             </div>
@@ -728,7 +728,7 @@ include __DIR__ . '/header.php';
             </div>
         </div>
         <div class="row">
-            <button name="playBtn" id="playBtn" onClick="play();" value="play" style="width:100%; position: fixed; bottom: 0px; right: 0px;" class="btn btn-lg btn-default" disabled="true">Запустить</button>
+            <button name="playBtn" id="playBtn" onClick="play();" value="play" style="width:100%; position: fixed; bottom: 0px; right: 0px; font-size: 24px; padding: 18px;" class="btn btn-lg btn-default" disabled="true">Запустить</button>
         </div>
         <!-- /.row -->
 

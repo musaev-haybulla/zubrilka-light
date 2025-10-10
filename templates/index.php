@@ -2,21 +2,25 @@
 
     <style>
         .index-page {
-            margin-bottom: 40px;
+            margin-bottom: 52px;
         }
         .index-hero {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 39px;
         }
         .index-hero h1 {
-            margin-bottom: 5px;
+            margin-bottom: 7px;
+            font-size: 48px;
+        }
+        .index-hero small {
+            font-size: 20px;
         }
         .index-card {
             background: #f9fafb;
             border: 1px solid #e7eaef;
-            border-radius: 14px;
-            padding: 25px 30px;
-            box-shadow: 0 10px 25px rgba(20, 56, 97, 0.08);
+            border-radius: 18px;
+            padding: 33px 39px;
+            box-shadow: 0 13px 33px rgba(20, 56, 97, 0.08);
         }
         .index-card.accent {
             background: #fff6f0;
@@ -25,31 +29,34 @@
         }
         .index-card.accent h3 {
             color: #d87339;
+            font-size: 28px;
         }
         .index-section-title {
-            font-size: 24px;
+            font-size: 31px;
             font-weight: 600;
-            margin-bottom: 18px;
+            margin-bottom: 23px;
             color: #2c3e50;
         }
         .index-category {
-            margin-bottom: 16px;
+            margin-bottom: 21px;
         }
         .index-category-name {
             font-weight: 700;
-            font-size: 18px;
+            font-size: 23px;
             color: #1a365d;
         }
         .index-category ol {
-            padding-left: 20px;
-            margin-top: 8px;
+            padding-left: 26px;
+            margin-top: 10px;
         }
         .index-category ol li {
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            font-size: 18px;
         }
         .index-category a {
             color: #2c6ad4;
             font-weight: 500;
+            font-size: 18px;
         }
         .index-category a:hover {
             text-decoration: none;
@@ -58,13 +65,13 @@
         .index-benefits {
             list-style: none;
             padding: 0;
-            margin: 15px 0 0;
+            margin: 20px 0 0;
         }
         .index-benefits li {
-            margin-bottom: 10px;
-            padding-left: 22px;
+            margin-bottom: 13px;
+            padding-left: 29px;
             position: relative;
-            font-size: 15px;
+            font-size: 19px;
         }
         .index-benefits li::before {
             content: '✓';
@@ -72,14 +79,15 @@
             left: 0;
             color: #ffb37a;
             font-weight: bold;
+            font-size: 22px;
         }
         @media (max-width: 767px) {
             .index-card {
-                margin-bottom: 20px;
-                padding: 20px;
+                margin-bottom: 26px;
+                padding: 26px;
             }
             .index-section-title {
-                font-size: 22px;
+                font-size: 29px;
             }
         }
     </style>
