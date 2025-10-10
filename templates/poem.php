@@ -426,9 +426,11 @@ include __DIR__ . '/header.php';
         
         // Подсветка текущей строки при воспроизведении
         var highlightInterval = null;
+        var currentStanzaNumber = null;
         
         function startHighlighting() {
             if (highlightInterval) return; // Уже запущено
+            currentStanzaNumber = null; // Сброс при старте
             
             highlightInterval = setInterval(function() {
                 if (sound && sound.playing()) {
@@ -443,23 +445,47 @@ include __DIR__ . '/header.php';
                 clearInterval(highlightInterval);
                 highlightInterval = null;
             }
+            currentStanzaNumber = null;
             // Убираем подсветку со всех строк
             document.querySelectorAll('.verse-line').forEach(function(line) {
                 line.classList.remove('current');
             });
         }
         
+        function getStanzaNumber(line) {
+            // Ищем номер куплета: идём назад до ближайшего .stanza-divider
+            var prev = line.previousElementSibling;
+            while (prev) {
+                if (prev.classList.contains('stanza-divider')) {
+                    var numberSpan = prev.querySelector('.stanza-number');
+                    return numberSpan ? parseInt(numberSpan.textContent) : null;
+                }
+                prev = prev.previousElementSibling;
+            }
+            return 1; // Первый куплет по умолчанию
+        }
+        
         function highlightCurrentLine(currentTime) {
+            var found = false;
             document.querySelectorAll('.verse-line').forEach(function(line) {
                 var start = parseFloat(line.dataset.start);
                 var end = parseFloat(line.dataset.end);
                 
-                if (currentTime >= start && currentTime < end) {
+                // Проверяем диапазон времени
+                if (currentTime >= start && currentTime < end && !found) {
                     if (!line.classList.contains('current')) {
                         line.classList.add('current');
-                        // Автоскролл к текущей строке
-                        line.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        
+                        // Определяем номер куплета
+                        var stanzaNum = getStanzaNumber(line);
+                        
+                        // Скроллим только при смене куплета или первом запуске
+                        if (currentStanzaNumber === null || currentStanzaNumber !== stanzaNum) {
+                            currentStanzaNumber = stanzaNum;
+                            line.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
                     }
+                    found = true;
                 } else {
                     line.classList.remove('current');
                 }
@@ -731,16 +757,9 @@ include __DIR__ . '/header.php';
             margin-bottom: 0;
         }
         /* Подсветка текущей проигрываемой строки */
-        .verse-line.current {
-            background: linear-gradient(90deg, #fff7ed 0%, #ffedd5 50%, #fff7ed 100%);
-            border-radius: 8px;
-            transform: translateX(4px);
-            box-shadow: 0 2px 8px rgba(251, 146, 60, 0.15);
-            margin-left: -4px;
-            padding-left: 4px;
-        }
         .verse-line.current label {
-            font-weight: 500;
+            font-weight: 700;
+            transition: font-weight 0.2s ease;
         }
         /* Разделители куплетов */
         .stanza-divider {
@@ -1062,8 +1081,8 @@ include __DIR__ . '/header.php';
                         <?php endif; ?>
                         
                         <div class="verse-line <?= $verse['is_paragraph_end'] ? 'paragraph-end' : '' ?>" 
-                             data-start="<?= $verse['audio_timestamp'] ?>"
-                             data-end="<?= isset($verses[$key + 1]) ? $verses[$key + 1]['audio_timestamp'] : 999999 ?>"
+                             data-start="<?= $key > 0 ? $verses[$key - 1]['audio_timestamp'] : 0 ?>"
+                             data-end="<?= $verse['audio_timestamp'] ?>"
                              id="verse_<?= $key ?>">
                             <label id='label_partition_<?= $key ?>' for='partition_<?= $key ?>'>
                                 <input type='checkbox' id='partition_<?= $key ?>' onChange='setCheck();'>
