@@ -421,10 +421,9 @@ include __DIR__ . '/header.php';
             display: inline-flex;
             align-items: center;
             cursor: pointer;
-            padding: 10px 12px;
+            padding: 6px 8px;
             transition: all 0.2s;
             position: relative;
-            margin-left: 39px;
             user-select: none;
         }
         .poem-text label:hover {
@@ -502,7 +501,7 @@ include __DIR__ . '/header.php';
             color: #ff827d;
         }
         .poem-text {
-            margin-left: 0;
+            margin-left: 30px;
         }
         .mobile-controls {
             margin: 0 20px 25px;
