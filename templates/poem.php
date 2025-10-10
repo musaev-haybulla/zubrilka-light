@@ -400,19 +400,23 @@ include __DIR__ . '/header.php';
     </script>
             
     <style>
-        .label_partition_check {
+        .label_partition_check,
+        .label_partition_check span {
             color: #000;
             font-size: 29px;
         }
-        .label_partition_uncheck {
+        .label_partition_uncheck,
+        .label_partition_uncheck span {
             color: #ccc;
             font-size: 29px;
         }
-        .label_partition_check_big {
+        .label_partition_check_big,
+        .label_partition_check_big span {
             color: #000;
             font-size: 34px;
         }
-        .label_partition_uncheck_big {
+        .label_partition_uncheck_big,
+        .label_partition_uncheck_big span {
             color: #ccc;
             font-size: 34px;
         }
@@ -460,7 +464,7 @@ include __DIR__ . '/header.php';
         .poem-text label:has(input[type="checkbox"]:checked)::after {
             content: '';
             position: absolute;
-            left: 19px;
+            left: 6px;
             top: 50%;
             width: 5px;
             height: 10px;
@@ -472,6 +476,23 @@ include __DIR__ . '/header.php';
         /* Hover на чекбоксе */
         .poem-text label:hover::before {
             border-color: #006FEE;
+        }
+        /* Заблокированные чекбоксы */
+        .poem-text input[type="checkbox"]:disabled + span {
+            color: #ccc;
+            opacity: 0.5;
+        }
+        .poem-text label:has(input[type="checkbox"]:disabled) {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .poem-text label:has(input[type="checkbox"]:disabled)::before {
+            background: #f5f5f5;
+            border-color: #e0e0e0;
+            cursor: not-allowed;
+        }
+        .poem-text label:has(input[type="checkbox"]:disabled):hover::before {
+            border-color: #e0e0e0;
         }
         .textSizeNormal {
             font-size: 14px;
