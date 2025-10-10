@@ -503,6 +503,12 @@ include __DIR__ . '/header.php';
         .poem-text {
             margin-left: 30px;
         }
+        .verse-line {
+            margin-bottom: 4px;
+        }
+        .verse-line.paragraph-end {
+            margin-bottom: 20px;
+        }
         .mobile-controls {
             margin: 0 20px 25px;
             padding: 15px;
@@ -741,14 +747,12 @@ include __DIR__ . '/header.php';
             <div class="col-md-8 col-sm-8 col-xs-12">
                 <div class="poem-text">
                     <?php foreach($verses as $key => $verse): ?>
-                        <label id='label_partition_<?= $key ?>' for='partition_<?= $key ?>'>
-                            <input type='checkbox' id='partition_<?= $key ?>' onChange='setCheck();'>
-                            <span><?= h($verse['text']) ?></span>
-                        </label>
-                        <br />
-                        <?php if ($verse['is_paragraph_end']): ?>
-                            <br />
-                        <?php endif; ?> 
+                        <div class="verse-line <?= $verse['is_paragraph_end'] ? 'paragraph-end' : '' ?>">
+                            <label id='label_partition_<?= $key ?>' for='partition_<?= $key ?>'>
+                                <input type='checkbox' id='partition_<?= $key ?>' onChange='setCheck();'>
+                                <span><?= h($verse['text']) ?></span>
+                            </label>
+                        </div>
                     <?php endforeach; ?>
                 </div>   
             </div>
