@@ -75,7 +75,7 @@
         <div class="container">
             <div class="navbar-header">
                 <a class="navbar-brand" href="<?= url() ?>">
-                    <img src='<?= url('logo.png') ?>' class="navbar-logo" alt="Зубрилка">
+                    <img src='<?= url('/images/logo.png') ?>' class="navbar-logo" alt="Зубрилка">
                 </a>
             </div>
         </div>

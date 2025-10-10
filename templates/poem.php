@@ -139,20 +139,6 @@ include __DIR__ . '/header.php';
                 }
             }
             
-            if(flag == 0) {
-                for(i = 0; i < countCheck; i++){
-                    var current = document.getElementById('partition_'+i);
-                    var currentLabel = document.getElementById('label_partition_'+i);
-                    current.disabled = false;
-                    if (currentLabel.className.indexOf('big') == "-1") {
-                        currentLabel.className = 'label_partition_check';
-                    } else {
-                        currentLabel.className = 'label_partition_check_big';
-                    }
-                }
-                return;
-            }
-            
             // Находим индексы первой и последней выбранной строки
             var firstIndex = -1;
             var lastIndex = -1;
@@ -164,16 +150,37 @@ include __DIR__ . '/header.php';
                 }
             }
             
+            // Обновляем стили и доступность строк
             for (i = 0; i < countCheck; i++) {
                 var current = document.getElementById('partition_'+i);
                 var currentLabel = document.getElementById('label_partition_'+i);
                 
-                // Разрешаем выбор только строк между первой и последней (включительно)
-                // и строк рядом с ними (firstIndex-1, lastIndex+1)
-                if (i >= firstIndex - 1 && i <= lastIndex + 1) {
+                // Если ничего не выбрано - все разблокированы
+                if (flag === 0) {
                     current.disabled = false;
-                } else {
-                    current.disabled = true;
+                } 
+                // Если выбрана только одна строка - разблокированы она и соседние
+                else if (firstIndex === lastIndex) {
+                    if (i === firstIndex || i === firstIndex - 1 || i === firstIndex + 1) {
+                        current.disabled = false;
+                    } else {
+                        current.disabled = true;
+                    }
+                }
+                // Если выбран диапазон
+                else {
+                    // Разрешаем изменение только для:
+                    // 1. Крайних выбранных строк (firstIndex, lastIndex) - можно снять
+                    // 2. Строк рядом с диапазоном (firstIndex-1, lastIndex+1) - можно добавить
+                    if (i === firstIndex || i === lastIndex || i === firstIndex - 1 || i === lastIndex + 1) {
+                        current.disabled = false;
+                    } else if (i > firstIndex && i < lastIndex) {
+                        // Строки внутри диапазона - заблокированы, но выбраны
+                        current.disabled = true;
+                    } else {
+                        // Строки вне диапазона - заблокированы
+                        current.disabled = true;
+                    }
                 }
 
                 if (current.checked) {
