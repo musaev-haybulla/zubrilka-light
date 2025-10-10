@@ -137,23 +137,27 @@ include __DIR__ . '/header.php';
                 return;
             }
             
+            // Находим индексы первой и последней выбранной строки
+            var firstIndex = -1;
+            var lastIndex = -1;
+            for (i = 0; i < countCheck; i++) {
+                var current = document.getElementById('partition_'+i);
+                if (current.checked) {
+                    if (firstIndex === -1) firstIndex = i;
+                    lastIndex = i;
+                }
+            }
+            
             for (i = 0; i < countCheck; i++) {
                 var current = document.getElementById('partition_'+i);
                 var currentLabel = document.getElementById('label_partition_'+i);
                 
-                if (i != 0) {
-                    var prev = document.getElementById('partition_'+(i-1));
-                }
-                if (i != (countCheck-1)) {
-                    var next = document.getElementById('partition_'+(i+1));
-                }
-
-                if( (current !== first && current !== last) && 
-                    (prev !== last && next !== first) ) {
-                    current.disabled = true;
-                }
-                else {
+                // Разрешаем выбор только строк между первой и последней (включительно)
+                // и строк рядом с ними (firstIndex-1, lastIndex+1)
+                if (i >= firstIndex - 1 && i <= lastIndex + 1) {
                     current.disabled = false;
+                } else {
+                    current.disabled = true;
                 }
 
                 if (current.checked) {
@@ -401,23 +405,17 @@ include __DIR__ . '/header.php';
             
     <style>
         .label_partition_check,
-        .label_partition_check span {
-            color: #000;
-            font-size: 29px;
-        }
+        .label_partition_check span,
         .label_partition_uncheck,
         .label_partition_uncheck span {
-            color: #ccc;
+            color: #000;
             font-size: 29px;
         }
         .label_partition_check_big,
-        .label_partition_check_big span {
-            color: #000;
-            font-size: 34px;
-        }
+        .label_partition_check_big span,
         .label_partition_uncheck_big,
         .label_partition_uncheck_big span {
-            color: #ccc;
+            color: #000;
             font-size: 34px;
         }
         /* HeroUI стиль чекбоксов для строк стиха */
@@ -425,14 +423,20 @@ include __DIR__ . '/header.php';
             display: inline-flex;
             align-items: center;
             cursor: pointer;
-            padding: 0;
-            margin: 0;
+            padding: 4px 8px;
+            margin: 0 -8px;
             transition: all 0.2s;
             position: relative;
             user-select: none;
+            border-radius: 6px;
         }
         .poem-text label:hover {
-            opacity: 0.7;
+            background: #e6f3ff;
+            transform: translateX(2px);
+        }
+        /* Выбранная строка - голубой фон */
+        .poem-text label:has(input[type="checkbox"]:checked) {
+            background: #e6f3ff;
         }
         .poem-text input[type="checkbox"] {
             position: absolute;
@@ -464,7 +468,7 @@ include __DIR__ . '/header.php';
         .poem-text label:has(input[type="checkbox"]:checked)::after {
             content: '';
             position: absolute;
-            left: 6px;
+            left: 13px;
             top: 50%;
             width: 5px;
             height: 10px;
@@ -479,20 +483,21 @@ include __DIR__ . '/header.php';
         }
         /* Заблокированные чекбоксы */
         .poem-text input[type="checkbox"]:disabled + span {
-            color: #ccc;
-            opacity: 0.5;
+            color: #d4d4d8;
         }
         .poem-text label:has(input[type="checkbox"]:disabled) {
             cursor: not-allowed;
-            opacity: 0.5;
+            opacity: 0.3;
+            pointer-events: none;
         }
         .poem-text label:has(input[type="checkbox"]:disabled)::before {
-            background: #f5f5f5;
-            border-color: #e0e0e0;
+            background: #fafafa;
+            border-color: #e5e5e5;
             cursor: not-allowed;
         }
-        .poem-text label:has(input[type="checkbox"]:disabled):hover::before {
-            border-color: #e0e0e0;
+        .poem-text label:has(input[type="checkbox"]:disabled):hover {
+            background: transparent;
+            transform: none;
         }
         .textSizeNormal {
             font-size: 14px;
