@@ -302,6 +302,9 @@ include __DIR__ . '/header.php';
                 var playId = sound.play();
                 console.log('Play ID:', playId);
                 
+                // Запускаем подсветку текущей строки
+                startHighlighting();
+                
                 // Небольшая задержка для проверки состояния
                 setTimeout(function() {
                     console.log('Playing state after start:', sound.playing());
@@ -324,6 +327,7 @@ include __DIR__ . '/header.php';
                         if (playFlag && sound.playing()) {
                             sound.stop();
                             playFlag = 0;
+                            stopHighlighting();
                             playBtn.className = 'btn btn-lg btn-success';
                             playBtn.innerHTML = 'Запустить';
                             setCheck();
@@ -339,6 +343,9 @@ include __DIR__ . '/header.php';
                     cancelAnimationFrame(loopMonitorId);
                     loopMonitorId = null;
                 }
+                // Останавливаем подсветку
+                stopHighlighting();
+                
                 var playBtn = document.getElementById('playBtn');
                 playBtn.className = 'btn btn-lg btn-success';
                 playBtn.innerHTML = 'Запустить';
@@ -416,6 +423,48 @@ include __DIR__ . '/header.php';
         window.addEventListener('DOMContentLoaded', function() {
             localStorage.removeItem('selectedFont');
         });
+        
+        // Подсветка текущей строки при воспроизведении
+        var highlightInterval = null;
+        
+        function startHighlighting() {
+            if (highlightInterval) return; // Уже запущено
+            
+            highlightInterval = setInterval(function() {
+                if (sound && sound.playing()) {
+                    var currentTime = sound.seek();
+                    highlightCurrentLine(currentTime);
+                }
+            }, 100); // Проверяем каждые 100мс
+        }
+        
+        function stopHighlighting() {
+            if (highlightInterval) {
+                clearInterval(highlightInterval);
+                highlightInterval = null;
+            }
+            // Убираем подсветку со всех строк
+            document.querySelectorAll('.verse-line').forEach(function(line) {
+                line.classList.remove('current');
+            });
+        }
+        
+        function highlightCurrentLine(currentTime) {
+            document.querySelectorAll('.verse-line').forEach(function(line) {
+                var start = parseFloat(line.dataset.start);
+                var end = parseFloat(line.dataset.end);
+                
+                if (currentTime >= start && currentTime < end) {
+                    if (!line.classList.contains('current')) {
+                        line.classList.add('current');
+                        // Автоскролл к текущей строке
+                        line.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                } else {
+                    line.classList.remove('current');
+                }
+            });
+        }
         
         function gainChange() {
             var volume = parseFloat(document.getElementById('points').value);
@@ -676,9 +725,22 @@ include __DIR__ . '/header.php';
         .verse-line {
             margin-bottom: 6px;
             line-height: 1.2;
+            transition: all 0.3s ease;
         }
         .verse-line.paragraph-end {
             margin-bottom: 0;
+        }
+        /* Подсветка текущей проигрываемой строки */
+        .verse-line.current {
+            background: linear-gradient(90deg, #fff7ed 0%, #ffedd5 50%, #fff7ed 100%);
+            border-radius: 8px;
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(251, 146, 60, 0.15);
+            margin-left: -4px;
+            padding-left: 4px;
+        }
+        .verse-line.current label {
+            font-weight: 500;
         }
         /* Разделители куплетов */
         .stanza-divider {
@@ -999,7 +1061,10 @@ include __DIR__ . '/header.php';
                             </div>
                         <?php endif; ?>
                         
-                        <div class="verse-line <?= $verse['is_paragraph_end'] ? 'paragraph-end' : '' ?>">
+                        <div class="verse-line <?= $verse['is_paragraph_end'] ? 'paragraph-end' : '' ?>" 
+                             data-start="<?= $verse['audio_timestamp'] ?>"
+                             data-end="<?= isset($verses[$key + 1]) ? $verses[$key + 1]['audio_timestamp'] : 999999 ?>"
+                             id="verse_<?= $key ?>">
                             <label id='label_partition_<?= $key ?>' for='partition_<?= $key ?>'>
                                 <input type='checkbox' id='partition_<?= $key ?>' onChange='setCheck();'>
                                 <span><?= h($verse['text']) ?></span>
