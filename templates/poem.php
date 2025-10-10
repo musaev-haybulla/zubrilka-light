@@ -481,23 +481,28 @@ include __DIR__ . '/header.php';
         .poem-text label:hover::before {
             border-color: #006FEE;
         }
-        /* Заблокированные чекбоксы */
-        .poem-text input[type="checkbox"]:disabled + span {
+        /* Заблокированные чекбоксы (невыбранные строки) */
+        .poem-text input[type="checkbox"]:disabled:not(:checked) + span {
             color: #d4d4d8;
         }
-        .poem-text label:has(input[type="checkbox"]:disabled) {
+        .poem-text label:has(input[type="checkbox"]:disabled:not(:checked)) {
             cursor: not-allowed;
             opacity: 0.3;
             pointer-events: none;
         }
-        .poem-text label:has(input[type="checkbox"]:disabled)::before {
+        .poem-text label:has(input[type="checkbox"]:disabled:not(:checked))::before {
             background: #fafafa;
             border-color: #e5e5e5;
             cursor: not-allowed;
         }
-        .poem-text label:has(input[type="checkbox"]:disabled):hover {
+        .poem-text label:has(input[type="checkbox"]:disabled:not(:checked)):hover {
             background: transparent;
             transform: none;
+        }
+        /* Заблокированные но выбранные чекбоксы (при воспроизведении) */
+        .poem-text label:has(input[type="checkbox"]:disabled:checked) {
+            cursor: default;
+            pointer-events: none;
         }
         .textSizeNormal {
             font-size: 14px;
