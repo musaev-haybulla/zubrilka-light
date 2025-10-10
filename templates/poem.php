@@ -421,13 +421,14 @@ include __DIR__ . '/header.php';
             display: inline-flex;
             align-items: center;
             cursor: pointer;
-            padding: 6px 8px;
+            padding: 0;
+            margin: 0;
             transition: all 0.2s;
             position: relative;
             user-select: none;
         }
         .poem-text label:hover {
-            opacity: 0.8;
+            opacity: 0.7;
         }
         .poem-text input[type="checkbox"] {
             position: absolute;
@@ -504,10 +505,11 @@ include __DIR__ . '/header.php';
             margin-left: 30px;
         }
         .verse-line {
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+            line-height: 1.6;
         }
         .verse-line.paragraph-end {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
         .mobile-controls {
             margin: 0 20px 25px;
