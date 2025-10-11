@@ -295,7 +295,7 @@ include __DIR__ . '/header.php';
                     playBtn.className = 'btn btn-lg btn-success';
                     playBtn.innerHTML = 'Запустить';
                     playBtn.disabled = false;
-                    console.log('✅ Аудио загружено и закешировано');
+                    if (DEBUG_AUDIO) console.log('✅ Аудио загружено и закешировано');
                     
                     // Скрываем прелоадер
                     var loader = document.getElementById('page-loader');
@@ -327,7 +327,7 @@ include __DIR__ . '/header.php';
                 var currentTime = sound.seek();
                 
                 if (typeof currentTime === 'number' && currentTime >= soundEnd) {
-                    console.log('🔄🔄🔄 LOOP DETECTED - REWINDING!', {
+                    if (DEBUG_AUDIO) console.log('🔄🔄🔄 LOOP DETECTED - REWINDING!', {
                         currentTime: currentTime,
                         soundEnd: soundEnd,
                         soundStart: soundStart,
@@ -343,7 +343,7 @@ include __DIR__ . '/header.php';
                     // Через небольшую задержку снимаем флаг
                     setTimeout(function() {
                         isRewinding = false;
-                        console.log('✅ Rewind complete, flag cleared');
+                        if (DEBUG_AUDIO) console.log('✅ Rewind complete, flag cleared');
                     }, 300);
                     
                     // КРИТИЧНО: сбрасываем посещенные куплеты для корректного скролла
@@ -351,7 +351,7 @@ include __DIR__ . '/header.php';
                     currentStanzaNumber = null;
                     lastTargetLineId = null;
                     
-                    console.log('🔄 State after reset:', {
+                    if (DEBUG_SCROLL) console.log('🔄 State after reset:', {
                         visitedStanzas: Array.from(visitedStanzas),
                         currentStanzaNumber: currentStanzaNumber,
                         lastTargetLineId: lastTargetLineId
@@ -360,7 +360,7 @@ include __DIR__ . '/header.php';
                     // Принудительно скроллим к первой строке
                     var firstLine = document.querySelector('.verse-line');
                     if (firstLine) {
-                        console.log('📍 Forcing scroll to first line:', {
+                        if (DEBUG_SCROLL) console.log('📍 Forcing scroll to first line:', {
                             lineId: firstLine.id,
                             dataStart: firstLine.dataset.start,
                             dataEnd: firstLine.dataset.end
@@ -450,34 +450,20 @@ include __DIR__ . '/header.php';
                 // КРИТИЧНО для HTML5 Audio: ждем пока sound.playing() станет true
                 // В HTML5 Audio есть задержка между play() и реальным началом воспроизведения
                 setTimeout(function() {
-                    if (DEBUG_AUDIO) console.log('🎯 Delayed startHighlighting() - sound state:', {
+                    if (DEBUG_AUDIO) console.log('🎯 Delayed start - sound state:', {
                         playing: sound.playing(),
                         seek: sound.seek()
                     });
+                    
+                    // Запускаем подсветку и мониторинг КОГДА звук точно заиграл
                     startHighlighting();
-                }, 150); // 150мс достаточно для HTML5 Audio
-                
-                // Небольшая задержка для проверки состояния и запуска мониторинга
-                setTimeout(function() {
-                    if (DEBUG_AUDIO) console.log('🔍 100ms after play() - checking state:', {
-                        playing: sound.playing(),
-                        seek: sound.seek(),
-                        rate: sound.rate(),
-                        volume: sound.volume(),
-                        state: sound.state()
-                    });
                     
-                    // Попробуем принудительно установить громкость
-                    sound.volume(1.0);
-                    Howler.volume(1.0);
-                    
-                    // Запускаем мониторинг ПОСЛЕ того как звук точно начал играть
                     if (loop) {
                         monitorLoop();
                     } else {
                         monitorOnce();
                     }
-                }, 100);
+                }, 150); // 150мс достаточно для HTML5 Audio
                 
             } else {
                 if (sound) {
@@ -569,8 +555,8 @@ include __DIR__ . '/header.php';
         });
         
         // Подсветка текущей строки при воспроизведении
-        var DEBUG_SCROLL = true;  // Включить для отладки скролла
-        var DEBUG_AUDIO = true;   // Включить для диагностики аудио (seek, rate, duration)
+        var DEBUG_SCROLL = false; // Включить для отладки скролла
+        var DEBUG_AUDIO = false;  // Включить для диагностики аудио (seek, rate, duration)
         var currentStanzaNumber = null;
         var isHighlightingActive = false;
         var visitedStanzas = new Set();
