@@ -1,4 +1,4 @@
-# Zubrilka - команды для разработки и деплоя
+# Zubrilka Light - команды для разработки и деплоя
 
 # Показать все доступные команды
 default:
@@ -8,7 +8,7 @@ default:
 deploy-archive:
     #!/usr/bin/env bash
     echo "📦 Создание архива для деплоя..."
-    ARCHIVE_NAME="zubrilka-deploy-$(date +%Y%m%d-%H%M%S).zip"
+    ARCHIVE_NAME="zubrilka-light-deploy-$(date +%Y%m%d-%H%M%S).zip"
     
     zip -r "$ARCHIVE_NAME" . \
       -x "*.git*" \
@@ -32,7 +32,7 @@ deploy-archive:
 deploy-tar:
     #!/usr/bin/env bash
     echo "📦 Создание tar.gz архива..."
-    ARCHIVE_NAME="zubrilka-deploy-$(date +%Y%m%d-%H%M%S).tar.gz"
+    ARCHIVE_NAME="zubrilka-light-deploy-$(date +%Y%m%d-%H%M%S).tar.gz"
     
     tar -czf "$ARCHIVE_NAME" \
       --exclude='.git' \
@@ -128,7 +128,7 @@ size:
     @du -sh */ | sort -hr | head -5
 
 # Деплой через SSH (git pull на сервере)
-deploy-ssh HOST USER PATH="/var/www/zubrilka":
+deploy-ssh HOST USER PATH="/var/www/zubrilka-light":
     #!/usr/bin/env bash
     echo "🚀 Деплой на сервер через SSH..."
     
@@ -150,7 +150,7 @@ deploy-ssh HOST USER PATH="/var/www/zubrilka":
     echo "🌐 Проверь: https://{{HOST}}"
 
 # Деплой через rsync (без git на сервере)
-deploy-rsync HOST USER PATH="/var/www/zubrilka":
+deploy-rsync HOST USER PATH="/var/www/zubrilka-light":
     #!/usr/bin/env bash
     echo "🚀 Деплой через rsync..."
     
@@ -179,6 +179,28 @@ deploy:
     
     echo "🚀 Деплой на $DEPLOY_HOST..."
     just deploy-ssh $DEPLOY_HOST $DEPLOY_USER $DEPLOY_PATH
+
+# Git деплой: коммит + пуш + pull на сервере
+deploy-git MESSAGE="Update":
+    #!/usr/bin/env bash
+    if [ ! -f .env ]; then
+        echo "❌ Файл .env не найден!"
+        exit 1
+    fi
+    
+    source .env
+    
+    echo "📦 Коммит изменений..."
+    git add -A
+    git commit -m "{{MESSAGE}}" || echo "Нет изменений для коммита"
+    
+    echo "⬆️  Push в репозиторий..."
+    git push origin main
+    
+    echo "⬇️  Pull на сервере..."
+    ssh $DEPLOY_USER@$DEPLOY_HOST "cd $DEPLOY_PATH && git pull origin main"
+    
+    echo "✅ Деплой завершён!"
 
 # Запустить OrbStack/Docker
 docker-start:

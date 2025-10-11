@@ -1,5 +1,4 @@
 <?php 
-$extra_fonts = true;
 include __DIR__ . '/header.php'; 
 ?>
 
@@ -12,6 +11,8 @@ include __DIR__ . '/header.php';
     <script src="<?= asset('js/my.js') ?>"></script>
         
     <script>
+        var highlightRafId = null;
+        var lastRafTime = null;
         countCheck = <?= count($verses) ?>;
         playFlag   = 0;
         textSizeFlag  = (getCookie('textSizeFlag') !== undefined) ? getCookie('textSizeFlag') : 0;
@@ -120,6 +121,9 @@ include __DIR__ . '/header.php';
             var flag = 0;
             var first   = null;
             var last    = null;
+            
+            // Сбрасываем позицию куплета при изменении выбора
+            currentStanzaNumber = null;
             
             for(i = 0; i < countCheck; i++){
                 var current = document.getElementById('partition_'+i);
@@ -445,38 +449,194 @@ include __DIR__ . '/header.php';
         });
         
         // Подсветка текущей строки при воспроизведении
-        var highlightInterval = null;
+        var DEBUG_SCROLL = false; // Включить для отладки скролла
         var currentStanzaNumber = null;
-        var isHighlightingActive = false; // Флаг активности
+        var isHighlightingActive = false;
+        var visitedStanzas = new Set();
+        var scrollTraceId = 0;
+        var lastTargetLineId = null;
+        var lastPlaybackTime = null;
+        var highlightTickId = 0;
+        var lastRawSeek = null;
+        var lastDeltaSeek = null;
+        var highlightRafId = null;
+        var lastRafTime = null;
+        
+        // Константы для обработки скролла и подсветки
+        var MIN_DELTA_SEEK = 0.005;        // Минимальное изменение позиции для обновления
+        var REWIND_THRESHOLD = -0.05;      // Порог для определения отката назад
+        var REWIND_DURATION = 250;         // Длительность анимации при rewind (мс)
+        var NORMAL_SCROLL_DURATION = 600;  // Обычная длительность скролла (мс)
+        
+        /**
+         * Трассировка событий скролла (только для отладки)
+         */
+        function traceScroll(event, payload) {
+            if (!DEBUG_SCROLL) return;
+            scrollTraceId += 1;
+            console.log('🧭 [' + scrollTraceId + '] ' + event, payload || '');
+        }
+
+        /**
+         * Трассировка событий подсветки (только для отладки)
+         */
+        function traceHighlight(event, payload) {
+            if (!DEBUG_SCROLL) return;
+            highlightTickId += 1;
+            console.log('⏺️ [' + highlightTickId + '] ' + event, payload || '');
+        }
+        
+        /**
+         * Объект для управления плавным скроллом с отменой
+         */
+        var scrollAnimator = {
+            activeId: 0,
+            rafId: null,
+            startY: 0,
+            targetY: 0,
+            duration: NORMAL_SCROLL_DURATION,
+            cancel: function(reason) {
+                if (this.rafId !== null) {
+                    cancelAnimationFrame(this.rafId);
+                    this.rafId = null;
+                    traceScroll('scrollCancel', { reason: reason || 'manual', targetY: this.targetY });
+                }
+            },
+            scrollToLine: function(line, meta) {
+                var rect = line.getBoundingClientRect();
+                var viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+                var targetY = rect.top + (window.pageYOffset || document.documentElement.scrollTop) - (viewportHeight / 2) + (rect.height / 2);
+                targetY = Math.max(0, Math.round(targetY));
+                var startY = window.pageYOffset || document.documentElement.scrollTop;
+                if (Math.abs(targetY - startY) < 4) {
+                    traceScroll('scrollSkip', { reason: 'delta<4', targetY: targetY, startY: startY, meta: meta });
+                    window.scrollTo(0, targetY);
+                    return;
+                }
+                this.cancel('new-scroll');
+                this.activeId += 1;
+                var animationId = this.activeId;
+                this.startY = startY;
+                this.targetY = targetY;
+                var duration = meta && meta.durationOverride ? meta.durationOverride : this.duration;
+                var ease = function(t) {
+                    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+                };
+                var self = this;
+                var startTime = performance.now();
+                traceScroll('scrollStart', {
+                    id: animationId,
+                    startY: startY,
+                    targetY: targetY,
+                    duration: duration,
+                    meta: meta
+                });
+                var step = function(now) {
+                    if (self.activeId !== animationId) {
+                        return;
+                    }
+                    var elapsed = now - startTime;
+                    var t = Math.min(1, elapsed / duration);
+                    var eased = ease(t);
+                    var current = Math.round(self.startY + (self.targetY - self.startY) * eased);
+                    window.scrollTo(0, current);
+                    if (t < 1) {
+                        self.rafId = requestAnimationFrame(step);
+                    } else {
+                        self.rafId = null;
+                        traceScroll('scrollComplete', {
+                            id: animationId,
+                            finalPosition: current,
+                            meta: meta
+                        });
+                    }
+                };
+                this.rafId = requestAnimationFrame(step);
+            }
+        };
         
         function startHighlighting() {
-            if (highlightInterval) return; // Уже запущено
-            currentStanzaNumber = null; // Сброс при старте
+            if (highlightRafId) return;
             isHighlightingActive = true;
+            visitedStanzas = new Set();
+            lastPlaybackTime = null;
+            highlightTickId = 0;
+            lastRawSeek = null;
+            lastDeltaSeek = null;
+            lastRafTime = null;
+            traceScroll('startHighlighting', {
+                currentStanzaNumber: currentStanzaNumber,
+                visited: Array.from(visitedStanzas)
+            });
             
-            highlightInterval = setInterval(function() {
-                if (sound && sound.playing() && isHighlightingActive) {
-                    var currentTime = sound.seek();
-                    highlightCurrentLine(currentTime);
+            var rafLoop = function(now) {
+                if (!isHighlightingActive || !sound || !sound.playing()) {
+                    highlightRafId = null;
+                    traceHighlight('rafStop', {
+                        now: now,
+                        playing: sound ? sound.playing() : false,
+                        isHighlightingActive: isHighlightingActive
+                    });
+                    return;
                 }
-            }, 100); // Проверяем каждые 100мс
+                var seekValue = sound.seek();
+                var deltaSeek = lastRawSeek === null ? null : seekValue - lastRawSeek;
+                var deltaTime = lastRafTime === null ? null : (now - lastRafTime) / 1000;
+                var isRewindFrame = deltaSeek !== null && deltaSeek < REWIND_THRESHOLD;
+                if (isRewindFrame) {
+                    visitedStanzas = new Set();
+                }
+                if (deltaSeek !== null && Math.abs(deltaSeek) < MIN_DELTA_SEEK) {
+                    traceHighlight('rafSkipSmallDelta', {
+                        now: now,
+                        seek: seekValue,
+                        deltaSeek: deltaSeek,
+                        deltaTime: deltaTime,
+                        playing: sound.playing(),
+                        reason: 'abs(deltaSeek)<MIN_DELTA_SEEK'
+                    });
+                    lastRawSeek = seekValue;
+                    lastRafTime = now;
+                    lastDeltaSeek = deltaSeek;
+                    lastPlaybackTime = seekValue;
+                    highlightRafId = requestAnimationFrame(rafLoop);
+                    return;
+                }
+                traceHighlight('rafTick', {
+                    now: now,
+                    seek: seekValue,
+                    deltaSeek: deltaSeek,
+                    deltaTime: deltaTime,
+                    playing: sound.playing(),
+                    isHighlightingActive: isHighlightingActive,
+                    currentStanzaNumber: currentStanzaNumber,
+                    lastTargetLineId: lastTargetLineId,
+                    rafId: highlightTickId + 1
+                });
+                lastRawSeek = seekValue;
+                lastRafTime = now;
+                highlightCurrentLine(seekValue, deltaSeek);
+                lastDeltaSeek = deltaSeek;
+                lastPlaybackTime = seekValue;
+                highlightRafId = requestAnimationFrame(rafLoop);
+            };
+            highlightRafId = requestAnimationFrame(rafLoop);
         }
         
         function stopHighlighting() {
-            isHighlightingActive = false; // Сначала отключаем флаг
+            isHighlightingActive = false;
+            traceScroll('stopHighlighting', {
+                currentStanzaNumber: currentStanzaNumber,
+                lastTargetLineId: lastTargetLineId,
+                visited: Array.from(visitedStanzas)
+            });
             
-            if (highlightInterval) {
-                clearInterval(highlightInterval);
-                highlightInterval = null;
+            if (highlightRafId !== null) {
+                cancelAnimationFrame(highlightRafId);
+                highlightRafId = null;
             }
-            currentStanzaNumber = null;
-            
-            // Небольшая задержка перед удалением подсветки
-            setTimeout(function() {
-                document.querySelectorAll('.verse-line').forEach(function(line) {
-                    line.classList.remove('current');
-                });
-            }, 50);
+            scrollAnimator.cancel('stopHighlighting');
+            lastPlaybackTime = null;
         }
         
         function getStanzaNumber(line) {
@@ -492,34 +652,151 @@ include __DIR__ . '/header.php';
             return 1; // Первый куплет по умолчанию
         }
         
-        function highlightCurrentLine(currentTime) {
-            // Не обрабатываем если подсветка неактивна
+        function isLineComfortablyVisible(line) {
+            var rect = line.getBoundingClientRect();
+            var viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+            var padding = Math.min(120, viewportHeight * 0.25);
+            return rect.top >= padding && rect.bottom <= (viewportHeight - padding);
+        }
+        
+        function highlightCurrentLine(currentTime, deltaSeek) {
             if (!isHighlightingActive) return;
             
-            var found = false;
-            document.querySelectorAll('.verse-line').forEach(function(line) {
+            var lines = document.querySelectorAll('.verse-line');
+            var targetLine = null;
+            var isRewind = false;
+            if (typeof deltaSeek === 'number' && deltaSeek < REWIND_THRESHOLD) {
+                isRewind = true;
+            } else if (lastPlaybackTime !== null && currentTime + 0.05 < lastPlaybackTime) {
+                isRewind = true;
+            }
+            
+            lines.forEach(function(line) {
+                if (targetLine) return;
                 var start = parseFloat(line.dataset.start);
                 var end = parseFloat(line.dataset.end);
                 
-                // Проверяем диапазон времени
-                if (currentTime >= start && currentTime < end && !found) {
+                if (currentTime >= start && currentTime < end) {
+                    targetLine = line;
+                }
+            });
+            
+            if (!targetLine) {
+                if (isRewind) {
+                    traceScroll('playbackRewind:noTarget', {
+                        currentTime: currentTime,
+                        lastPlaybackTime: lastPlaybackTime
+                    });
+                    visitedStanzas = new Set();
+                } else {
+                    traceScroll('noTargetLine', {
+                        currentTime: currentTime,
+                        lastTargetLineId: lastTargetLineId
+                    });
+                }
+                traceHighlight('noTarget', {
+                    currentTime: currentTime,
+                    isRewind: isRewind,
+                    lastPlaybackTime: lastPlaybackTime,
+                    lastDeltaSeek: lastDeltaSeek
+                });
+                lastPlaybackTime = currentTime;
+                return; // сохраняем подсветку последней строки, чтобы избежать рывка при окончании
+            }
+
+            if (isRewind) {
+                traceScroll('playbackRewind', {
+                    currentTime: currentTime,
+                    lastPlaybackTime: lastPlaybackTime,
+                    targetLine: targetLine.id
+                });
+                visitedStanzas = new Set();
+            }
+
+            var targetLineId = targetLine.id;
+            if (targetLineId !== lastTargetLineId) {
+                traceScroll('targetLineDetected', {
+                    currentTime: currentTime,
+                    lineId: targetLineId,
+                    start: targetLine.dataset.start,
+                    end: targetLine.dataset.end
+                });
+                traceHighlight('targetLineChange', {
+                    lineId: targetLineId,
+                    currentTime: currentTime,
+                    deltaSeek: lastDeltaSeek,
+                    isRewind: isRewind
+                });
+                lastTargetLineId = targetLineId;
+                if (isRewind) {
+                    scrollAnimator.cancel('lineChangeDuringRewind');
+                    // Rewind logic: cancel any ongoing scroll animation and reset the visited stanzas
+                    visitedStanzas = new Set();
+                }
+            }
+            
+            lines.forEach(function(line) {
+                if (line === targetLine) {
                     if (!line.classList.contains('current')) {
                         line.classList.add('current');
-                        
-                        // Определяем номер куплета
-                        var stanzaNum = getStanzaNumber(line);
-                        
-                        // Скроллим только при смене куплета или первом запуске
-                        if (isHighlightingActive && (currentStanzaNumber === null || currentStanzaNumber !== stanzaNum)) {
-                            currentStanzaNumber = stanzaNum;
-                            line.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    var stanzaNum = getStanzaNumber(line);
+                    if (currentStanzaNumber !== stanzaNum || isRewind) {
+                        var previousStanza = currentStanzaNumber;
+                        currentStanzaNumber = stanzaNum;
+                        var firstVisit = !visitedStanzas.has(stanzaNum);
+                        if (isRewind) {
+                            visitedStanzas = new Set();
+                            firstVisit = true;
+                        }
+                        visitedStanzas.add(stanzaNum);
+                        var comfortable = isLineComfortablyVisible(line);
+                        traceScroll('stanzaChange', {
+                            stanza: stanzaNum,
+                            previous: previousStanza,
+                            firstVisit: firstVisit,
+                            comfortable: comfortable,
+                            lineRect: line.getBoundingClientRect(),
+                            scrollPosition: window.pageYOffset || document.documentElement.scrollTop,
+                            rewind: isRewind
+                        });
+                        traceHighlight('stanzaDecision', {
+                            stanza: stanzaNum,
+                            previous: previousStanza,
+                            firstVisit: firstVisit,
+                            comfortable: comfortable,
+                            shouldScroll: isRewind || firstVisit || !comfortable,
+                            reason: isRewind ? 'rewind' : (firstVisit ? 'firstVisit' : (comfortable ? 'none' : 'notComfortable'))
+                        });
+                        var shouldScroll = isRewind || firstVisit || !comfortable;
+                        if (shouldScroll) {
+                            var before = window.pageYOffset || document.documentElement.scrollTop;
+                            var reason = isRewind ? 'rewind' : (firstVisit ? 'firstVisit' : 'notComfortable');
+                            traceScroll('scrollRequest', {
+                                stanza: stanzaNum,
+                                before: before,
+                                reason: reason
+                            });
+                            traceHighlight('scrollDispatch', {
+                                stanza: stanzaNum,
+                                reason: reason,
+                                before: before,
+                                animatorActiveId: scrollAnimator.activeId
+                            });
+                            scrollAnimator.scrollToLine(line, {
+                                stanza: stanzaNum,
+                                reason: reason,
+                                lineId: line.id,
+                                isRewind: isRewind,
+                                durationOverride: isRewind ? REWIND_DURATION : undefined
+                            });
                         }
                     }
-                    found = true;
                 } else {
                     line.classList.remove('current');
                 }
             });
+            lastPlaybackTime = currentTime;
         }
         
         function gainChange() {
@@ -1068,6 +1345,7 @@ include __DIR__ . '/header.php';
                             <button class="speed-btn active" data-speed="1" title="Обычная скорость">1.0</button>
                             <button class="speed-btn" data-speed="1.25" title="Быстро">1.25</button>
                             <button class="speed-btn" data-speed="1.5" title="Очень быстро">1.5</button>
+                            <button class="speed-btn" data-speed="2" title="Пуля">2</button>
                         </div>
                     </div>
                 </div>
