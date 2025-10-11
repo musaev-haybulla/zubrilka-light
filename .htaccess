@@ -21,6 +21,14 @@ AddDefaultCharset UTF-8
     ExpiresByType text/css "access plus 1 month"
     ExpiresByType application/javascript "access plus 1 month"
     ExpiresByType audio/mpeg "access plus 1 year"
+    ExpiresByType audio/mp3 "access plus 1 year"
+</IfModule>
+
+# Дополнительные заголовки кеширования для аудио
+<IfModule mod_headers.c>
+    <FilesMatch "\.(mp3|wav|ogg)$">
+        Header set Cache-Control "max-age=31536000, public, immutable"
+    </FilesMatch>
 </IfModule>
 
 # Сжатие

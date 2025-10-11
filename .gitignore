@@ -18,3 +18,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Config
+.env
+includes/config.php

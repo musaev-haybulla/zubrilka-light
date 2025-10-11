@@ -6,6 +6,47 @@ include __DIR__ . '/header.php';
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&display=swap" rel="stylesheet">
 
+    <!-- Полноэкранный прелоадер -->
+    <style>
+        #page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease-out;
+        }
+        #page-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #5cb85c;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        .loader-text {
+            font-size: 18px;
+            color: #666;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            font-weight: 400;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
     <script src="<?= asset('js/my.js') ?>"></script>
@@ -24,6 +65,9 @@ include __DIR__ . '/header.php';
             var $player = $('#player');
             playerOriginalTop = $player.offset().top;
             playerOriginalLeft = $player.offset().left;
+            
+            // Загружаем аудио после того как DOM готов
+            loadSoundFile('<?= media($poem_number . '/' . $poem_number . '.mp3') ?>');
         });
         
         $(window).resize(function() {
@@ -232,19 +276,31 @@ include __DIR__ . '/header.php';
             var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
             console.log('🎵 Howl #' + howlInstanceCount + ' | Pool:', Howler._howls.length, '| Safari:', isSafari);
             
+            // Показываем полноэкранный прелоадер
+            var loader = document.getElementById('page-loader');
+            if (loader) {
+                loader.classList.remove('hidden');
+                loader.querySelector('.loader-text').textContent = 'Загрузка аудио...';
+            }
+            
             sound = new Howl({
                 src: [url],
-                html5: isSafari, // Safari работает лучше с HTML5 Audio
+                html5: false, // Используем Web Audio API для лучшего кеширования
                 preload: true,
                 format: ['mp3'],
-                pool: isSafari ? 5 : 1, // Для Safari увеличиваем пул
+                pool: 1,
                 onload: function() {
-                    document.getElementById('status').innerHTML = '';
-                    document.getElementById('status2').innerHTML = '';
                     var playBtn = document.getElementById('playBtn');
                     playBtn.className = 'btn btn-lg btn-success';
                     playBtn.innerHTML = 'Запустить';
                     playBtn.disabled = false;
+                    console.log('✅ Аудио загружено и закешировано');
+                    
+                    // Скрываем прелоадер
+                    var loader = document.getElementById('page-loader');
+                    if (loader) {
+                        loader.classList.add('hidden');
+                    }
                 },
                 onloaderror: function(id, error) {
                     console.error('Ошибка загрузки:', id, error);
@@ -861,8 +917,6 @@ include __DIR__ . '/header.php';
                 label.className = currentLabelStyle;
             }
         }
-
-        loadSoundFile('<?= media($poem_number . '/' . $poem_number . '.mp3') ?>');
     </script>
             
     <style>
@@ -1260,6 +1314,7 @@ include __DIR__ . '/header.php';
             display: none;
             margin-bottom: 0;
         }
+        
         .speed-btn {
             cursor: pointer;
             border: 1px solid #d1d5db;
@@ -1289,6 +1344,12 @@ include __DIR__ . '/header.php';
             font-weight: 600;
         }
     </style>
+
+    <!-- Полноэкранный прелоадер -->
+    <div id="page-loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">Загрузка страницы...</div>
+    </div>
 
     <!-- Page Content -->
     <div class="container">
@@ -1336,7 +1397,7 @@ include __DIR__ . '/header.php';
                             <span class="textSizeBig" onClick="TextSizeSetBig();" id="textSizeBig2">Крупный</span>
                         </div>
                     </div>
-                    <span id='status2'>пожалуйста, подождите...<br> загружается аудиофайл</span>
+                    <span id='status2'></span>
                     <div class="mobile-speed">
                         <label>Скорость</label>
                         <div class="mobile-speed-buttons">
@@ -1399,7 +1460,7 @@ include __DIR__ . '/header.php';
                             <span class="textSizeBig" onClick="TextSizeSetBig();" id="textSizeBig">Крупный</span>
                         </div>
                     </div>
-                    <span id='status'>пожалуйста, подождите...<br> загружается аудиофайл</span>
+                    <span id='status'></span>
                     <div class="desktop-volume">
                         <label>Громкость</label>
                         <input type="range" id="points" step="0.2" min="0.0" max="1" value="1" onchange="gainChange();">
