@@ -1320,27 +1320,10 @@ include __DIR__ . '/header.php';
         /* Подсветка текущей проигрываемой строки */
         .verse-line.current label,
         .verse-line.current label span {
-            /* Вариант 1: Мягкое свечение серым (ВЫБРАН) */
-            text-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
-            
-            /* Вариант 2: Цвет + легкая тень */
-            /* color: #006FEE !important; */
-            /* text-shadow: 0 0 6px rgba(0, 111, 238, 0.35); */
-            
-            /* Вариант 3: Подчеркивание */
-            /* text-decoration: underline; */
-            /* text-decoration-color: #006FEE; */
-            /* text-decoration-thickness: 2px; */
-            /* text-underline-offset: 3px; */
-            
-            /* Вариант 4: Фон строки (как маркер) */
-            /* background: linear-gradient(to right, rgba(0, 111, 238, 0.12), transparent) !important; */
-            /* border-radius: 4px; */
-            
-            /* Вариант 5: Объемная тень (приподнятая строка) */
-            /* box-shadow: rgba(0, 111, 238, 0.15) 0px 8px 24px 0px; */
-            /* border-radius: 4px; */
-            /* transform: translateY(-1px); */
+            /* Усиленное серое свечение - более выразительное */
+            text-shadow: 
+                0 0 12px rgba(0, 0, 0, 0.45),
+                0 0 6px rgba(0, 0, 0, 0.35);
             
             transition: text-shadow 0.2s ease;
         }
