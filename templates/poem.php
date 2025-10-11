@@ -192,6 +192,9 @@ include __DIR__ . '/header.php';
                 }
             }
             
+            // Обновляем плавающую кнопку
+            updateFloatingClearButton();
+            
             // Находим индексы первой и последней выбранной строки
             var firstIndex = -1;
             var lastIndex = -1;
@@ -516,7 +519,45 @@ include __DIR__ . '/header.php';
             }
         }
         
-        // Быстрый выбор: выбрать куплет
+        // Выделить куплет по индексу строки
+        function selectStanzaByLineIndex(lineIndex) {
+            if (lineIndex < 0 || lineIndex >= countCheck) return;
+            
+            // Находим начало куплета (идём вверх до paragraph-end предыдущего куплета)
+            var stanzaStart = 0;
+            for (var i = lineIndex - 1; i >= 0; i--) {
+                var verseDiv = document.getElementById('partition_'+i).closest('.verse-line');
+                if (verseDiv && verseDiv.classList.contains('paragraph-end')) {
+                    stanzaStart = i + 1;
+                    break;
+                }
+            }
+            
+            // Находим конец куплета (идём вниз до paragraph-end)
+            var stanzaEnd = countCheck - 1;
+            for (var i = lineIndex; i < countCheck; i++) {
+                var verseDiv = document.getElementById('partition_'+i).closest('.verse-line');
+                if (verseDiv && verseDiv.classList.contains('paragraph-end')) {
+                    stanzaEnd = i;
+                    break;
+                }
+            }
+            
+            // Снимаем все выделения
+            for (var i = 0; i < countCheck; i++) {
+                document.getElementById('partition_'+i).checked = false;
+            }
+            
+            // Выделяем весь куплет
+            for (var i = stanzaStart; i <= stanzaEnd; i++) {
+                document.getElementById('partition_'+i).checked = true;
+            }
+            
+            setCheck();
+            updateFloatingClearButton();
+        }
+        
+        // Быстрый выбор: выбрать куплет (для обратной совместимости)
         function selectStanza() {
             // Находим первую выбранную строку
             var selectedIndex = -1;
@@ -528,31 +569,7 @@ include __DIR__ . '/header.php';
             }
             if (selectedIndex === -1) return; // Ничего не выбрано
             
-            // Находим начало куплета (идём вверх до paragraph-end предыдущего куплета)
-            var stanzaStart = 0;
-            for (i = selectedIndex - 1; i >= 0; i--) {
-                var verseDiv = document.getElementById('partition_'+i).closest('.verse-line');
-                if (verseDiv && verseDiv.classList.contains('paragraph-end')) {
-                    stanzaStart = i + 1;
-                    break;
-                }
-            }
-            
-            // Находим конец куплета (идём вниз до paragraph-end)
-            var stanzaEnd = countCheck - 1;
-            for (i = selectedIndex; i < countCheck; i++) {
-                var verseDiv = document.getElementById('partition_'+i).closest('.verse-line');
-                if (verseDiv && verseDiv.classList.contains('paragraph-end')) {
-                    stanzaEnd = i;
-                    break;
-                }
-            }
-            
-            // Выделяем весь куплет
-            for (i = stanzaStart; i <= stanzaEnd; i++) {
-                document.getElementById('partition_'+i).checked = true;
-            }
-            setCheck();
+            selectStanzaByLineIndex(selectedIndex);
         }
         
         // Toggle: выбрать всё / снять выделение
@@ -573,6 +590,36 @@ include __DIR__ . '/header.php';
             }
             
             setCheck();
+            updateFloatingClearButton();
+        }
+        
+        // Снять все выделения (для плавающей кнопки)
+        function clearAllSelections() {
+            for (var i = 0; i < countCheck; i++) {
+                document.getElementById('partition_'+i).checked = false;
+            }
+            setCheck();
+            updateFloatingClearButton();
+        }
+        
+        // Обновление видимости плавающей кнопки
+        function updateFloatingClearButton() {
+            var hasSelection = false;
+            for (var i = 0; i < countCheck; i++) {
+                if (document.getElementById('partition_'+i).checked) {
+                    hasSelection = true;
+                    break;
+                }
+            }
+            
+            var floatingBtn = document.getElementById('floatingClearBtn');
+            if (floatingBtn) {
+                if (hasSelection && !document.body.classList.contains('self-check-mode')) {
+                    floatingBtn.style.display = 'flex';
+                } else {
+                    floatingBtn.style.display = 'none';
+                }
+            }
         }
         
         // Очищаем старый выбор шрифта из localStorage
@@ -1207,6 +1254,24 @@ include __DIR__ . '/header.php';
             verseLines.forEach(function(span) {
                 span.dataset.originalText = span.textContent;
             });
+            
+            // Добавляем обработчики двойного клика для выделения куплета
+            var allVerseLines = document.querySelectorAll('.verse-line');
+            allVerseLines.forEach(function(verseLine, index) {
+                verseLine.addEventListener('dblclick', function(e) {
+                    // Не работает в режиме самопроверки
+                    if (document.body.classList.contains('self-check-mode')) return;
+                    
+                    // Не работает во время воспроизведения
+                    if (playFlag) return;
+                    
+                    e.preventDefault();
+                    selectStanzaByLineIndex(index);
+                });
+            });
+            
+            // Инициализируем плавающую кнопку
+            updateFloatingClearButton();
         });
 
         window.onload = function(){
@@ -1326,7 +1391,8 @@ include __DIR__ . '/header.php';
         body.self-check-mode .quick-selection-panel,
         body.self-check-mode .mobile-speed,
         body.self-check-mode .desktop-speed,
-        body.self-check-mode .desktop-volume {
+        body.self-check-mode .desktop-volume,
+        body.self-check-mode #floatingClearBtn {
             display: none !important;
         }
         /* Отключаем hover эффект на строках в режиме самопроверки */
@@ -1569,6 +1635,73 @@ include __DIR__ . '/header.php';
             gap: 10px;
             flex-wrap: wrap;
             align-items: center;
+        }
+        .quick-hint {
+            font-size: 13px;
+            color: #6b7280;
+            font-family: 'Lato', sans-serif;
+            font-style: italic;
+            user-select: none;
+        }
+        /* Скрываем подсказку на мобильных */
+        @media (max-width: 768px) {
+            .quick-hint {
+                display: none;
+            }
+        }
+        
+        /* Плавающая кнопка снятия выделения */
+        #floatingClearBtn {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            z-index: 999;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.3s ease;
+        }
+        #floatingClearBtn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        }
+        #floatingClearBtn:active {
+            transform: scale(0.95);
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        /* Скрываем плавающую кнопку в режиме самопроверки */
+        body.self-check-mode #floatingClearBtn {
+            display: none !important;
+        }
+        /* На мобильных устройствах сдвигаем выше */
+        @media (max-width: 768px) {
+            #floatingClearBtn {
+                bottom: 80px;
+                right: 15px;
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
         }
         .quick-btn-toggle {
             padding: 8px 20px;
@@ -1872,6 +2005,7 @@ include __DIR__ . '/header.php';
                     <button class="quick-btn-toggle" id="toggleSelectBtn" onclick="toggleSelection()">
                         <span class="toggle-text">Выбрать всё</span>
                     </button>
+                    <span class="quick-hint">💡 Двойной клик на строке выделяет весь куплет</span>
                 </div>
                 <div class="poem-text">
                     <?php 
@@ -1947,6 +2081,12 @@ include __DIR__ . '/header.php';
         <div class="row">
             <button name="playBtn" id="playBtn" onClick="play();" value="play" style="width:100%; position: fixed; bottom: 0px; right: 0px; font-size: 24px; padding: 18px;" class="btn btn-lg btn-default" disabled="true">Запустить</button>
         </div>
+        
+        <!-- Плавающая кнопка снятия выделения -->
+        <button id="floatingClearBtn" onclick="clearAllSelections();" title="Снять все выделения">
+            ✕
+        </button>
+        
         <!-- /.row -->
 
 <?php include __DIR__ . '/footer.php'; ?>
