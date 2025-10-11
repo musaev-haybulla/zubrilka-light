@@ -45,42 +45,53 @@
         }
         
         .navbar-brand {
-            padding: 10px 0;
+            padding: 15px 0 35px 0;
+            float: none;
+            display: inline-block;
+            margin: 0 auto;
+        }
+        .container > .navbar-header,
+        .container > .navbar-collapse,
+        .container-fluid > .navbar-header,
+        .container-fluid > .navbar-collapse {
+            margin-left: 0;
+            margin-right: 0;
+        }
+        .navbar-header {
+            width: 100%;
+            float: none;
+            text-align: center;
         }
         .navbar-brand .navbar-logo {
-            height: 140px;
-            margin-top: -30px;
-            margin-bottom: -30px;
+            height: 100px;
+            margin: 0;
             transition: all 0.2s ease;
         }
         @media (max-width: 991px) {
+            .navbar-brand {
+                padding: 12px 0 20px 0;
+            }
             .navbar-brand .navbar-logo {
-                height: 130px;
-                margin-top: -26px;
-                margin-bottom: -26px;
+                height: 100px;
+                margin: 0;
             }
         }
         @media (max-width: 767px) {
-            .navbar-header {
-                width: 100%;
-                text-align: center;
-            }
             .navbar-brand {
-                float: none;
-                display: inline-block;
-                padding: 8px 0;
+                padding: 12px 0 20px 0;
             }
             .navbar-brand .navbar-logo {
-                height: 145px;
-                margin-top: -28px;
-                margin-bottom: -28px;
+                height: 100px;
+                margin: 0;
             }
         }
         @media (max-width: 479px) {
+            .navbar-brand {
+                padding: 10px 0 18px 0;
+            }
             .navbar-brand .navbar-logo {
-                height: 160px;
-                margin-top: -32px;
-                margin-bottom: -32px;
+                height: 100px;
+                margin: 0;
             }
         }
     </style>
