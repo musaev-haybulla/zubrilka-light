@@ -1318,9 +1318,31 @@ include __DIR__ . '/header.php';
             margin-bottom: 0;
         }
         /* Подсветка текущей проигрываемой строки */
-        .verse-line.current label {
-            font-weight: 700;
-            transition: font-weight 0.2s ease;
+        .verse-line.current label,
+        .verse-line.current label span {
+            /* Вариант 1: Мягкое свечение серым (ВЫБРАН) */
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
+            
+            /* Вариант 2: Цвет + легкая тень */
+            /* color: #006FEE !important; */
+            /* text-shadow: 0 0 6px rgba(0, 111, 238, 0.35); */
+            
+            /* Вариант 3: Подчеркивание */
+            /* text-decoration: underline; */
+            /* text-decoration-color: #006FEE; */
+            /* text-decoration-thickness: 2px; */
+            /* text-underline-offset: 3px; */
+            
+            /* Вариант 4: Фон строки (как маркер) */
+            /* background: linear-gradient(to right, rgba(0, 111, 238, 0.12), transparent) !important; */
+            /* border-radius: 4px; */
+            
+            /* Вариант 5: Объемная тень (приподнятая строка) */
+            /* box-shadow: rgba(0, 111, 238, 0.15) 0px 8px 24px 0px; */
+            /* border-radius: 4px; */
+            /* transform: translateY(-1px); */
+            
+            transition: text-shadow 0.2s ease;
         }
         /* Разделители куплетов */
         .stanza-divider {
@@ -1566,6 +1588,24 @@ include __DIR__ . '/header.php';
             border-color: #10b981;
             color: white;
             font-weight: 600;
+        }
+        
+        /* Адаптация для мобильных устройств */
+        @media (max-width: 768px) {
+            /* Уменьшаем размер текста стиха на мобильных */
+            .label_partition_check,
+            .label_partition_check span,
+            .label_partition_uncheck,
+            .label_partition_uncheck span {
+                font-size: 24px !important;
+            }
+            
+            .label_partition_check_big,
+            .label_partition_check_big span,
+            .label_partition_uncheck_big,
+            .label_partition_uncheck_big span {
+                font-size: 28px !important;
+            }
         }
     </style>
 
