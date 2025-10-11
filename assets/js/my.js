@@ -58,7 +58,5 @@ function isAllChecked() {
     return true;
 }
 
-function checkSync(looper) {
-    document.getElementById('loop').checked = looper.checked;
-    document.getElementById('loop2').checked = looper.checked;
-}
+// Функции синхронизации переключателей перенесены в poem.php
+// loopSync() и selfCheckSync() теперь определены там
