@@ -272,9 +272,10 @@ include __DIR__ . '/header.php';
             
             howlInstanceCount++;
             
-            // Определяем Safari
+            // Определяем браузер
             var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-            console.log('🎵 Howl #' + howlInstanceCount + ' | Pool:', Howler._howls.length, '| Safari:', isSafari);
+            var isYandex = /YaBrowser/i.test(navigator.userAgent);
+            console.log('🎵 Howl #' + howlInstanceCount + ' | Pool:', Howler._howls.length, '| Safari:', isSafari, '| Yandex:', isYandex);
             
             // Показываем полноэкранный прелоадер
             var loader = document.getElementById('page-loader');
@@ -285,7 +286,7 @@ include __DIR__ . '/header.php';
             
             sound = new Howl({
                 src: [url],
-                html5: false, // Используем Web Audio API для лучшего кеширования
+                html5: true, // HTML5 Audio сохраняет pitch при изменении скорости
                 preload: true,
                 format: ['mp3'],
                 pool: 1,
@@ -326,7 +327,53 @@ include __DIR__ . '/header.php';
                 var currentTime = sound.seek();
                 
                 if (typeof currentTime === 'number' && currentTime >= soundEnd) {
+                    console.log('🔄🔄🔄 LOOP DETECTED - REWINDING!', {
+                        currentTime: currentTime,
+                        soundEnd: soundEnd,
+                        soundStart: soundStart,
+                        visitedStanzasBefore: Array.from(visitedStanzas),
+                        currentStanzaNumber: currentStanzaNumber
+                    });
+                    
+                    // Устанавливаем флаг чтобы RAF не остановился
+                    isRewinding = true;
+                    
                     sound.seek(soundStart);
+                    
+                    // Через небольшую задержку снимаем флаг
+                    setTimeout(function() {
+                        isRewinding = false;
+                        console.log('✅ Rewind complete, flag cleared');
+                    }, 300);
+                    
+                    // КРИТИЧНО: сбрасываем посещенные куплеты для корректного скролла
+                    visitedStanzas.clear();
+                    currentStanzaNumber = null;
+                    lastTargetLineId = null;
+                    
+                    console.log('🔄 State after reset:', {
+                        visitedStanzas: Array.from(visitedStanzas),
+                        currentStanzaNumber: currentStanzaNumber,
+                        lastTargetLineId: lastTargetLineId
+                    });
+                    
+                    // Принудительно скроллим к первой строке
+                    var firstLine = document.querySelector('.verse-line');
+                    if (firstLine) {
+                        console.log('📍 Forcing scroll to first line:', {
+                            lineId: firstLine.id,
+                            dataStart: firstLine.dataset.start,
+                            dataEnd: firstLine.dataset.end
+                        });
+                        scrollAnimator.scrollToLine(firstLine, {
+                            reason: 'loopRewind',
+                            lineId: firstLine.id,
+                            isRewind: true,
+                            durationOverride: REWIND_DURATION
+                        });
+                    } else {
+                        console.error('❌ First line not found!');
+                    }
                 }
                 
                 loopMonitorId = requestAnimationFrame(monitorLoop);
@@ -396,13 +443,30 @@ include __DIR__ . '/header.php';
                 allCheckDisabled();
                 
                 // Запускаем воспроизведение
-                sound.play();
+                if (DEBUG_AUDIO) console.log('🎵 Calling sound.play()...');
+                var soundId = sound.play();
+                if (DEBUG_AUDIO) console.log('🎵 sound.play() returned:', soundId);
                 
-                // Запускаем подсветку текущей строки
-                startHighlighting();
+                // КРИТИЧНО для HTML5 Audio: ждем пока sound.playing() станет true
+                // В HTML5 Audio есть задержка между play() и реальным началом воспроизведения
+                setTimeout(function() {
+                    if (DEBUG_AUDIO) console.log('🎯 Delayed startHighlighting() - sound state:', {
+                        playing: sound.playing(),
+                        seek: sound.seek()
+                    });
+                    startHighlighting();
+                }, 150); // 150мс достаточно для HTML5 Audio
                 
                 // Небольшая задержка для проверки состояния и запуска мониторинга
                 setTimeout(function() {
+                    if (DEBUG_AUDIO) console.log('🔍 100ms after play() - checking state:', {
+                        playing: sound.playing(),
+                        seek: sound.seek(),
+                        rate: sound.rate(),
+                        volume: sound.volume(),
+                        state: sound.state()
+                    });
+                    
                     // Попробуем принудительно установить громкость
                     sound.volume(1.0);
                     Howler.volume(1.0);
@@ -505,7 +569,8 @@ include __DIR__ . '/header.php';
         });
         
         // Подсветка текущей строки при воспроизведении
-        var DEBUG_SCROLL = false; // Включить для отладки скролла
+        var DEBUG_SCROLL = true;  // Включить для отладки скролла
+        var DEBUG_AUDIO = true;   // Включить для диагностики аудио (seek, rate, duration)
         var currentStanzaNumber = null;
         var isHighlightingActive = false;
         var visitedStanzas = new Set();
@@ -517,6 +582,7 @@ include __DIR__ . '/header.php';
         var lastDeltaSeek = null;
         var highlightRafId = null;
         var lastRafTime = null;
+        var isRewinding = false; // Флаг что идет перемотка при зацикливании
         
         // Константы для обработки скролла и подсветки
         var MIN_DELTA_SEEK = 0.005;        // Минимальное изменение позиции для обновления
@@ -612,7 +678,11 @@ include __DIR__ . '/header.php';
         };
         
         function startHighlighting() {
-            if (highlightRafId) return;
+            if (DEBUG_AUDIO) console.log('🚀 startHighlighting() CALLED');
+            if (highlightRafId) {
+                if (DEBUG_AUDIO) console.log('⚠️ RAF already running, id:', highlightRafId);
+                return;
+            }
             isHighlightingActive = true;
             visitedStanzas = new Set();
             lastPlaybackTime = null;
@@ -620,14 +690,34 @@ include __DIR__ . '/header.php';
             lastRawSeek = null;
             lastDeltaSeek = null;
             lastRafTime = null;
+            var rafStartTime = performance.now(); // Запоминаем время старта RAF
+            if (DEBUG_AUDIO) console.log('✅ startHighlighting initialized, calling RAF...');
             traceScroll('startHighlighting', {
                 currentStanzaNumber: currentStanzaNumber,
                 visited: Array.from(visitedStanzas)
             });
             
             var rafLoop = function(now) {
-                if (!isHighlightingActive || !sound || !sound.playing()) {
+                // Диагностика только при первом кадре
+                if (DEBUG_AUDIO && highlightTickId === 0) {
+                    console.log('🎬 RAF LOOP STARTED!', {
+                        now: now,
+                        isHighlightingActive: isHighlightingActive,
+                        hasSound: !!sound,
+                        soundPlaying: sound ? sound.playing() : 'NO_SOUND'
+                    });
+                }
+                
+                // Для HTML5 Audio: в первые 300мс даем время звуку начать играть
+                var elapsedSinceStart = now - rafStartTime;
+                var isWarmupPhase = elapsedSinceStart < 300;
+                
+                if (!isHighlightingActive || !sound) {
                     highlightRafId = null;
+                    if (DEBUG_AUDIO) console.log('🛑 RAF STOPPED (no sound/inactive):', {
+                        isHighlightingActive: isHighlightingActive,
+                        hasSound: !!sound
+                    });
                     traceHighlight('rafStop', {
                         now: now,
                         playing: sound ? sound.playing() : false,
@@ -635,7 +725,66 @@ include __DIR__ . '/header.php';
                     });
                     return;
                 }
+                
+                // Проверка playing() с учетом warmup фазы
+                if (!sound.playing()) {
+                    // Если идет rewind - не останавливаем RAF
+                    if (isRewinding) {
+                        if (DEBUG_AUDIO) console.log('🔄 Rewind in progress, waiting...', {
+                            elapsed: Math.round(elapsedSinceStart),
+                            isRewinding: isRewinding
+                        });
+                        highlightRafId = requestAnimationFrame(rafLoop);
+                        return;
+                    }
+                    
+                    if (isWarmupPhase) {
+                        // HTML5 Audio еще загружается - продолжаем RAF
+                        if (DEBUG_AUDIO) console.log('⏳ Waiting for HTML5 Audio to start...', {
+                            elapsed: Math.round(elapsedSinceStart),
+                            state: sound.state()
+                        });
+                        highlightRafId = requestAnimationFrame(rafLoop);
+                        return;
+                    } else {
+                        // Прошло 300мс и звук не играет - останавливаем RAF
+                        highlightRafId = null;
+                        if (DEBUG_AUDIO) console.log('🛑 RAF STOPPED (not playing after warmup):', {
+                            elapsed: Math.round(elapsedSinceStart),
+                            soundPlaying: sound.playing()
+                        });
+                        traceHighlight('rafStop', {
+                            now: now,
+                            playing: false,
+                            isHighlightingActive: isHighlightingActive
+                        });
+                        return;
+                    }
+                }
+                
                 var seekValue = sound.seek();
+                
+                // HTML5 Audio может вернуть некорректное значение - пропускаем такие фреймы
+                if (typeof seekValue !== 'number' || isNaN(seekValue)) {
+                    if (DEBUG_AUDIO) {
+                        console.warn('⚠️ Invalid seek() in RAF:', seekValue, 'type:', typeof seekValue);
+                    }
+                    highlightRafId = requestAnimationFrame(rafLoop);
+                    return;
+                }
+                
+                // Диагностика для HTML5 Audio в разных браузерах
+                if (DEBUG_AUDIO && highlightTickId % 60 === 0) {
+                    console.log('🎧 Audio Debug:', {
+                        tick: highlightTickId,
+                        seek: seekValue,
+                        type: typeof seekValue,
+                        playing: sound.playing(),
+                        rate: sound.rate(),
+                        duration: sound.duration()
+                    });
+                }
+                
                 var deltaSeek = lastRawSeek === null ? null : seekValue - lastRawSeek;
                 var deltaTime = lastRafTime === null ? null : (now - lastRafTime) / 1000;
                 var isRewindFrame = deltaSeek !== null && deltaSeek < REWIND_THRESHOLD;
@@ -674,6 +823,7 @@ include __DIR__ . '/header.php';
                 highlightCurrentLine(seekValue, deltaSeek);
                 lastDeltaSeek = deltaSeek;
                 lastPlaybackTime = seekValue;
+                highlightTickId++; // КРИТИЧНО: инкрементируем счетчик кадров!
                 highlightRafId = requestAnimationFrame(rafLoop);
             };
             highlightRafId = requestAnimationFrame(rafLoop);
@@ -718,6 +868,14 @@ include __DIR__ . '/header.php';
         function highlightCurrentLine(currentTime, deltaSeek) {
             if (!isHighlightingActive) return;
             
+            // Валидация seek() для HTML5 Audio - может вернуть объект вместо числа
+            if (typeof currentTime !== 'number' || isNaN(currentTime)) {
+                if (DEBUG_AUDIO) {
+                    console.warn('⚠️ Invalid seek value:', currentTime, 'type:', typeof currentTime);
+                }
+                return;
+            }
+            
             var lines = document.querySelectorAll('.verse-line');
             var targetLine = null;
             var isRewind = false;
@@ -727,12 +885,16 @@ include __DIR__ . '/header.php';
                 isRewind = true;
             }
             
+            // Для HTML5 Audio добавляем небольшой буфер для компенсации погрешностей seek()
+            var SEEK_BUFFER = 0.05; // 50ms буфер для HTML5 Audio
+            
             lines.forEach(function(line) {
                 if (targetLine) return;
                 var start = parseFloat(line.dataset.start);
                 var end = parseFloat(line.dataset.end);
                 
-                if (currentTime >= start && currentTime < end) {
+                // Проверяем попадание с небольшим буфером для компенсации погрешностей
+                if (currentTime >= (start - SEEK_BUFFER) && currentTime < (end + SEEK_BUFFER)) {
                     targetLine = line;
                 }
             });
@@ -756,6 +918,17 @@ include __DIR__ . '/header.php';
                     lastPlaybackTime: lastPlaybackTime,
                     lastDeltaSeek: lastDeltaSeek
                 });
+                
+                // Дополнительная диагностика для HTML5 Audio
+                if (DEBUG_AUDIO && highlightTickId % 120 === 0) {
+                    console.log('🔍 No target line found:', {
+                        currentTime: currentTime,
+                        firstLineStart: lines[0] ? parseFloat(lines[0].dataset.start) : 'N/A',
+                        lastLineEnd: lines[lines.length-1] ? parseFloat(lines[lines.length-1].dataset.end) : 'N/A',
+                        soundDuration: sound ? sound.duration() : 'N/A'
+                    });
+                }
+                
                 lastPlaybackTime = currentTime;
                 return; // сохраняем подсветку последней строки, чтобы избежать рывка при окончании
             }
