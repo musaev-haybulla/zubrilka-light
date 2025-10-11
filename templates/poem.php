@@ -1274,17 +1274,40 @@ include __DIR__ . '/header.php';
             });
             
             // Добавляем обработчики двойного клика для выделения куплета
+            // Используем свою логику вместо dblclick для более точного определения
+            var lastClickedLine = null;
+            var lastClickTime = 0;
+            var DOUBLE_CLICK_THRESHOLD = 400; // 400ms для двойного клика (быстрее стандартных ~500ms)
+            
             var allVerseLines = document.querySelectorAll('.verse-line');
             allVerseLines.forEach(function(verseLine, index) {
-                verseLine.addEventListener('dblclick', function(e) {
+                verseLine.addEventListener('click', function(e) {
                     // Не работает в режиме самопроверки
                     if (document.body.classList.contains('self-check-mode')) return;
                     
                     // Не работает во время воспроизведения
                     if (playFlag) return;
                     
-                    e.preventDefault();
-                    selectStanzaByLineIndex(index);
+                    // Игнорируем клики по чекбоксу (они обрабатываются отдельно)
+                    if (e.target.type === 'checkbox') return;
+                    
+                    var now = Date.now();
+                    var timeSinceLastClick = now - lastClickTime;
+                    
+                    // Проверяем: это двойной клик по ТОЙ ЖЕ строке?
+                    if (lastClickedLine === index && timeSinceLastClick < DOUBLE_CLICK_THRESHOLD) {
+                        // Двойной клик по одной строке - выделяем куплет
+                        e.preventDefault();
+                        selectStanzaByLineIndex(index);
+                        
+                        // Сбрасываем, чтобы третий клик не считался за новый двойной
+                        lastClickedLine = null;
+                        lastClickTime = 0;
+                    } else {
+                        // Первый клик - запоминаем
+                        lastClickedLine = index;
+                        lastClickTime = now;
+                    }
                 });
             });
             
