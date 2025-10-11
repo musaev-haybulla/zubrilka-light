@@ -310,6 +310,36 @@ include __DIR__ . '/header.php';
                 onplayerror: function(id, error) {
                     console.error('Ошибка воспроизведения:', id, error);
                     alert('Ошибка воспроизведения: ' + error);
+                },
+                onplay: function() {
+                    // Событие срабатывает КОГДА звук реально начал играть
+                    if (DEBUG_AUDIO) console.log('🎵 onplay event - sound started playing');
+                    
+                    // Запускаем подсветку и мониторинг
+                    startHighlighting();
+                    
+                    if (currentLoopMode) {
+                        monitorLoop();
+                    } else {
+                        monitorOnce();
+                    }
+                },
+                onseek: function() {
+                    // Событие срабатывает КОГДА seek завершен
+                    if (isRewinding) {
+                        // Отменяем таймер если он был
+                        if (rewindTimerId) {
+                            clearTimeout(rewindTimerId);
+                            rewindTimerId = null;
+                        }
+                        isRewinding = false;
+                        if (DEBUG_AUDIO) console.log('✅ onseek: rewind complete');
+                    }
+                },
+                onstop: function() {
+                    // Событие срабатывает при остановке
+                    if (DEBUG_AUDIO) console.log('🛑 onstop event');
+                    stopHighlighting();
                 }
             });
         }
@@ -340,11 +370,13 @@ include __DIR__ . '/header.php';
                     
                     sound.seek(soundStart);
                     
-                    // Через небольшую задержку снимаем флаг
-                    setTimeout(function() {
+                    // Флаг будет сброшен в событии onseek
+                    // Но на всякий случай ставим запасной таймер
+                    rewindTimerId = setTimeout(function() {
                         isRewinding = false;
-                        if (DEBUG_AUDIO) console.log('✅ Rewind complete, flag cleared');
-                    }, 300);
+                        rewindTimerId = null;
+                        if (DEBUG_AUDIO) console.log('✅ Rewind timeout fallback');
+                    }, 500);
                     
                     // КРИТИЧНО: сбрасываем посещенные куплеты для корректного скролла
                     visitedStanzas.clear();
@@ -429,7 +461,7 @@ include __DIR__ . '/header.php';
                 soundStart = getSoundStart();
                 soundEnd = getSoundEnd();
                 
-                var loop = document.getElementById('loop').checked;
+                currentLoopMode = document.getElementById('loop').checked;
                 var speed = currentSpeed;
                 var volume = parseFloat(document.getElementById('points').value);
                 
@@ -443,27 +475,10 @@ include __DIR__ . '/header.php';
                 allCheckDisabled();
                 
                 // Запускаем воспроизведение
+                // Событие onplay запустит startHighlighting() и мониторинг
                 if (DEBUG_AUDIO) console.log('🎵 Calling sound.play()...');
                 var soundId = sound.play();
                 if (DEBUG_AUDIO) console.log('🎵 sound.play() returned:', soundId);
-                
-                // КРИТИЧНО для HTML5 Audio: ждем пока sound.playing() станет true
-                // В HTML5 Audio есть задержка между play() и реальным началом воспроизведения
-                setTimeout(function() {
-                    if (DEBUG_AUDIO) console.log('🎯 Delayed start - sound state:', {
-                        playing: sound.playing(),
-                        seek: sound.seek()
-                    });
-                    
-                    // Запускаем подсветку и мониторинг КОГДА звук точно заиграл
-                    startHighlighting();
-                    
-                    if (loop) {
-                        monitorLoop();
-                    } else {
-                        monitorOnce();
-                    }
-                }, 150); // 150мс достаточно для HTML5 Audio
                 
             } else {
                 if (sound) {
@@ -569,6 +584,9 @@ include __DIR__ . '/header.php';
         var highlightRafId = null;
         var lastRafTime = null;
         var isRewinding = false; // Флаг что идет перемотка при зацикливании
+        var startTimerId = null; // ID таймера для отложенного запуска
+        var rewindTimerId = null; // ID таймера для сброса флага isRewinding
+        var currentLoopMode = false; // Текущий режим зацикливания
         
         // Константы для обработки скролла и подсветки
         var MIN_DELTA_SEEK = 0.005;        // Минимальное изменение позиции для обновления
@@ -822,6 +840,16 @@ include __DIR__ . '/header.php';
                 lastTargetLineId: lastTargetLineId,
                 visited: Array.from(visitedStanzas)
             });
+            
+            // Отменяем все таймеры
+            if (startTimerId) {
+                clearTimeout(startTimerId);
+                startTimerId = null;
+            }
+            if (rewindTimerId) {
+                clearTimeout(rewindTimerId);
+                rewindTimerId = null;
+            }
             
             if (highlightRafId !== null) {
                 cancelAnimationFrame(highlightRafId);
