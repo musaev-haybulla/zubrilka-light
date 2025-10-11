@@ -477,6 +477,14 @@ include __DIR__ . '/header.php';
                 // Добавляем класс для скрытия фона выделенных строк
                 document.body.classList.add('audio-playing');
                 
+                // Блокируем кнопку "Выбрать всё"
+                var toggleBtn = document.getElementById('toggleSelectBtn');
+                if (toggleBtn) {
+                    toggleBtn.disabled = true;
+                    toggleBtn.style.opacity = '0.5';
+                    toggleBtn.style.cursor = 'not-allowed';
+                }
+                
                 // Запускаем воспроизведение
                 // Событие onplay запустит startHighlighting() и мониторинг
                 if (DEBUG_AUDIO) console.log('🎵 Calling sound.play()...');
@@ -846,6 +854,20 @@ include __DIR__ . '/header.php';
             
             // Убираем класс - возвращаем фон выделенным строкам
             document.body.classList.remove('audio-playing');
+            
+            // Разблокируем кнопку "Выбрать всё"
+            var toggleBtn = document.getElementById('toggleSelectBtn');
+            if (toggleBtn) {
+                toggleBtn.disabled = false;
+                toggleBtn.style.opacity = '1';
+                toggleBtn.style.cursor = 'pointer';
+            }
+            
+            // Убираем жирность со всех строк
+            var lines = document.querySelectorAll('.verse-line');
+            lines.forEach(function(line) {
+                line.classList.remove('current');
+            });
             
             // Отменяем все таймеры
             if (startTimerId) {
