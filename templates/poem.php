@@ -1103,6 +1103,95 @@ include __DIR__ . '/header.php';
             });
         }
         
+        // Синхронизация переключателя зацикливания
+        function loopSync(checkbox) {
+            document.getElementById('loop').checked = checkbox.checked;
+            document.getElementById('loop2').checked = checkbox.checked;
+        }
+        
+        // Синхронизация переключателя режима самопроверки
+        function selfCheckSync(checkbox) {
+            document.getElementById('selfCheck').checked = checkbox.checked;
+            document.getElementById('selfCheck2').checked = checkbox.checked;
+            toggleSelfCheckMode(checkbox.checked);
+        }
+        
+        // Включение/выключение режима самопроверки
+        function toggleSelfCheckMode(enabled) {
+            var verseLines = document.querySelectorAll('.verse-line label span');
+            
+            if (enabled) {
+                // Добавляем класс на body для управления стилями
+                document.body.classList.add('self-check-mode');
+                
+                // Останавливаем воспроизведение если оно идет
+                if (playFlag && sound) {
+                    sound.stop();
+                    playFlag = 0;
+                    stopHighlighting();
+                    var playBtn = document.getElementById('playBtn');
+                    if (playBtn) {
+                        playBtn.className = 'btn btn-lg btn-success';
+                        playBtn.innerHTML = 'Запустить';
+                    }
+                    setCheck();
+                }
+                
+                // Отключаем все чекбоксы
+                for (var i = 0; i < countCheck; i++) {
+                    var checkbox = document.getElementById('partition_'+i);
+                    if (checkbox) {
+                        checkbox.checked = false;
+                        checkbox.disabled = true;
+                    }
+                }
+            } else {
+                // Убираем класс с body
+                document.body.classList.remove('self-check-mode');
+                
+                // Включаем все чекбоксы обратно
+                for (var i = 0; i < countCheck; i++) {
+                    var checkbox = document.getElementById('partition_'+i);
+                    if (checkbox) {
+                        checkbox.disabled = false;
+                    }
+                }
+            }
+            
+            verseLines.forEach(function(span) {
+                // Всегда используем сохраненный оригинальный текст
+                var fullText = span.dataset.originalText || span.textContent;
+                
+                if (enabled) {
+                    // Разбиваем на первое слово и остальное
+                    var words = fullText.trim().split(/\s+/);
+                    if (words.length > 1) {
+                        var firstWord = words[0];
+                        var restWords = words.slice(1).join(' ');
+                        
+                        // Создаём HTML с видимым первым словом и заблюренным остальным
+                        span.innerHTML = firstWord + ' <span class="blurred-text" onclick="revealText(this)">' + restWords + '</span>';
+                    }
+                } else {
+                    // Восстанавливаем оригинальный текст
+                    span.textContent = fullText;
+                }
+            });
+            
+            // Обновляем состояние чекбоксов визуально
+            if (!enabled) {
+                setCheck();
+            }
+        }
+        
+        // Временное раскрытие текста при клике
+        function revealText(element) {
+            element.classList.add('revealed');
+            setTimeout(function() {
+                element.classList.remove('revealed');
+            }, 2000); // Показываем на 2 секунды
+        }
+        
         // Обработчики для кнопок скорости
         window.addEventListener('DOMContentLoaded', function() {
             var speedButtons = document.querySelectorAll('.speed-btn');
@@ -1111,6 +1200,12 @@ include __DIR__ . '/header.php';
                     var speed = parseFloat(this.getAttribute('data-speed'));
                     setSpeed(speed);
                 });
+            });
+            
+            // Сохраняем оригинальные тексты при загрузке
+            var verseLines = document.querySelectorAll('.verse-line label span');
+            verseLines.forEach(function(span) {
+                span.dataset.originalText = span.textContent;
             });
         });
 
@@ -1136,6 +1231,115 @@ include __DIR__ . '/header.php';
             
     <style>
         /* Специфичные стили только для страницы стиха */
+        
+        /* Красивые toggle switcher'ы (iOS-style) */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #d1d5db;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input:checked + .toggle-slider {
+            background-color: #10b981;
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+        .toggle-label-text {
+            font-weight: 500;
+            font-size: 16px;
+            color: #374151;
+            user-select: none;
+        }
+        .switch-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        /* Blur для режима самопроверки */
+        .blurred-text {
+            filter: blur(6px);
+            user-select: none;
+            cursor: help;
+            transition: filter 0.3s ease;
+        }
+        .blurred-text.revealed {
+            filter: blur(0px);
+        }
+        
+        /* Скрываем чекбоксы и элементы управления в режиме самопроверки */
+        body.self-check-mode .poem-text input[type="checkbox"] + span::before,
+        body.self-check-mode .poem-text input[type="checkbox"] + span::after {
+            display: none !important;
+        }
+        body.self-check-mode .poem-text label {
+            cursor: default;
+            padding-left: 0;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+        body.self-check-mode .poem-text label::before,
+        body.self-check-mode .poem-text label::after {
+            display: none !important;
+        }
+        /* Переопределяем стили disabled чекбоксов в режиме самопроверки */
+        body.self-check-mode .poem-text label span {
+            color: #000 !important;
+            opacity: 1 !important;
+        }
+        body.self-check-mode .poem-text label:has(input[type="checkbox"]:disabled) {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            cursor: default !important;
+        }
+        body.self-check-mode #playBtn,
+        body.self-check-mode .quick-selection-panel,
+        body.self-check-mode .mobile-speed,
+        body.self-check-mode .desktop-speed,
+        body.self-check-mode .desktop-volume {
+            display: none !important;
+        }
+        /* Отключаем hover эффект на строках в режиме самопроверки */
+        body.self-check-mode .poem-text label:hover {
+            background: transparent !important;
+            transform: none !important;
+        }
+        /* Убираем разделительную линию в режиме самопроверки */
+        body.self-check-mode .desktop-top-row {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
         
         .label_partition_check,
         .label_partition_check span {
@@ -1404,8 +1608,8 @@ include __DIR__ . '/header.php';
         }
         .mobile-top-row {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 12px;
             margin-bottom: 10px;
         }
         .mobile-loop {
@@ -1451,7 +1655,7 @@ include __DIR__ . '/header.php';
         .desktop-top-row {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 16px;
             margin-bottom: 15px;
             padding-bottom: 15px;
             border-bottom: 1px solid #e0e0e0;
@@ -1462,11 +1666,6 @@ include __DIR__ . '/header.php';
             gap: 10px;
             font-weight: 500;
             font-size: 19px;
-        }
-        .desktop-loop input[type="checkbox"] {
-            width: 23px;
-            height: 23px;
-            cursor: pointer;
         }
         .desktop-textsize {
             display: flex;
@@ -1634,10 +1833,20 @@ include __DIR__ . '/header.php';
             <div class="hidden-lg col-xs-12">
                 <div class="mobile-controls" id="player2"> 
                     <div class="mobile-top-row">
-                        <label class="mobile-loop">
-                            <input type="checkbox" id="loop2" onChange="checkSync(this);" checked>
-                            <span>Зациклить</span>
-                        </label>
+                        <div class="switch-row">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="loop2" onChange="loopSync(this);" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label-text">Зациклить</span>
+                        </div>
+                        <div class="switch-row">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="selfCheck2" onChange="selfCheckSync(this);">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label-text">Режим самопроверки</span>
+                        </div>
                         <div class="mobile-textsize">
                             <span class="textSizeNormalActive" onClick="TextSizeSetNormal();" id="textSizeNormal2">Средний</span>
                             <span class="divider">|</span>
@@ -1697,10 +1906,20 @@ include __DIR__ . '/header.php';
             <div class="col-lg-4 hidden-md hidden-sm hidden-xs">
                 <div class="desktop-controls" id="player"> 
                     <div class="desktop-top-row">
-                        <label class="desktop-loop">
-                            <input type='checkbox' id='loop' onChange="checkSync(this);" checked>
-                            <span>Зациклить</span>
-                        </label>
+                        <div class="switch-row">
+                            <label class="toggle-switch">
+                                <input type='checkbox' id='loop' onChange="loopSync(this);" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label-text">Зациклить</span>
+                        </div>
+                        <div class="switch-row">
+                            <label class="toggle-switch">
+                                <input type='checkbox' id='selfCheck' onChange="selfCheckSync(this);">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label-text">Режим самопроверки</span>
+                        </div>
                         <div class="desktop-textsize">
                             <span class="textSizeNormalActive" onClick="TextSizeSetNormal();" id="textSizeNormal">Средний</span>
                             <span class="divider">|</span>
