@@ -1179,6 +1179,25 @@ include __DIR__ . '/header.php';
             document.getElementById('selfCheck').checked = checkbox.checked;
             document.getElementById('selfCheck2').checked = checkbox.checked;
             toggleSelfCheckMode(checkbox.checked);
+            
+            // Показываем/скрываем переключатель варианта
+            var variantRow = document.getElementById('selfCheckVariantRow');
+            var variantRow2 = document.getElementById('selfCheckVariantRow2');
+            if (checkbox.checked) {
+                if (variantRow) variantRow.style.display = 'flex';
+                if (variantRow2) variantRow2.style.display = 'flex';
+            } else {
+                if (variantRow) variantRow.style.display = 'none';
+                if (variantRow2) variantRow2.style.display = 'none';
+            }
+        }
+        
+        // Синхронизация переключателя упрощенного режима
+        function selfCheckEasySync(checkbox) {
+            document.getElementById('selfCheckEasy').checked = checkbox.checked;
+            document.getElementById('selfCheckEasy2').checked = checkbox.checked;
+            // Перезапускаем режим самопроверки с новым вариантом
+            toggleSelfCheckMode(true);
         }
         
         // Включение/выключение режима самопроверки
@@ -1228,14 +1247,18 @@ include __DIR__ . '/header.php';
                 var fullText = span.dataset.originalText || span.textContent;
                 
                 if (enabled) {
-                    // Разбиваем на первое слово и остальное
+                    // Проверяем, включен ли упрощенный режим
+                    var isEasyMode = document.getElementById('selfCheckEasy').checked;
+                    var visibleWordsCount = isEasyMode ? 2 : 1;
+                    
+                    // Разбиваем на слова
                     var words = fullText.trim().split(/\s+/);
-                    if (words.length > 1) {
-                        var firstWord = words[0];
-                        var restWords = words.slice(1).join(' ');
+                    if (words.length > visibleWordsCount) {
+                        var visibleWords = words.slice(0, visibleWordsCount).join(' ');
+                        var restWords = words.slice(visibleWordsCount).join(' ');
                         
-                        // Создаём HTML с видимым первым словом и заблюренным остальным
-                        span.innerHTML = firstWord + ' <span class="blurred-text" onclick="revealText(this)">' + restWords + '</span>';
+                        // Создаём HTML с видимыми словами и заблюренным остальным
+                        span.innerHTML = visibleWords + ' <span class="blurred-text" onclick="revealText(this)">' + restWords + '</span>';
                     }
                 } else {
                     // Восстанавливаем оригинальный текст
@@ -1390,6 +1413,19 @@ include __DIR__ . '/header.php';
             align-items: center;
             gap: 12px;
             margin-bottom: 12px;
+        }
+        .switch-row.self-check-variant {
+            margin-top: -6px;
+        }
+        .switch-row.self-check-variant .toggle-label-text {
+            font-size: 14px;
+            color: #374151;
+        }
+        .switch-row.self-check-variant .toggle-slider {
+            background-color: #bfdbfe;
+        }
+        .switch-row.self-check-variant input:checked + .toggle-slider {
+            background-color: #3b82f6;
         }
         
         /* Blur для режима самопроверки */
@@ -2021,6 +2057,13 @@ include __DIR__ . '/header.php';
                             </label>
                             <span class="toggle-label-text">Режим самопроверки</span>
                         </div>
+                        <div class="switch-row self-check-variant" id="selfCheckVariantRow2" style="display: none;">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="selfCheckEasy2" onChange="selfCheckEasySync(this);">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label-text">Упрощенный (2 слова)</span>
+                        </div>
                         <div class="mobile-textsize">
                             <span class="textSizeNormalActive" onClick="TextSizeSetNormal();" id="textSizeNormal2">Средний</span>
                             <span class="divider">|</span>
@@ -2094,6 +2137,13 @@ include __DIR__ . '/header.php';
                                 <span class="toggle-slider"></span>
                             </label>
                             <span class="toggle-label-text">Режим самопроверки</span>
+                        </div>
+                        <div class="switch-row self-check-variant" id="selfCheckVariantRow" style="display: none;">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="selfCheckEasy" onChange="selfCheckEasySync(this);">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label-text">Упрощенный (2 слова)</span>
                         </div>
                         <div class="desktop-textsize">
                             <span class="textSizeNormalActive" onClick="TextSizeSetNormal();" id="textSizeNormal">Средний</span>
