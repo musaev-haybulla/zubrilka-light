@@ -488,6 +488,9 @@ include __DIR__ . '/header.php';
                     toggleBtn.style.cursor = 'not-allowed';
                 }
                 
+                // Скрываем плавающую кнопку
+                updateFloatingClearButton();
+                
                 // Запускаем воспроизведение
                 // Событие onplay запустит startHighlighting() и мониторинг
                 if (DEBUG_AUDIO) console.log('🎵 Calling sound.play()...');
@@ -543,14 +546,25 @@ include __DIR__ . '/header.php';
                 }
             }
             
-            // Снимаем все выделения
-            for (var i = 0; i < countCheck; i++) {
-                document.getElementById('partition_'+i).checked = false;
+            // Проверяем, весь ли куплет уже выделен
+            var allChecked = true;
+            for (var i = stanzaStart; i <= stanzaEnd; i++) {
+                if (!document.getElementById('partition_'+i).checked) {
+                    allChecked = false;
+                    break;
+                }
             }
             
-            // Выделяем весь куплет
-            for (var i = stanzaStart; i <= stanzaEnd; i++) {
-                document.getElementById('partition_'+i).checked = true;
+            if (allChecked) {
+                // Если весь куплет выделен - снимаем выделение с этого куплета
+                for (var i = stanzaStart; i <= stanzaEnd; i++) {
+                    document.getElementById('partition_'+i).checked = false;
+                }
+            } else {
+                // Если куплет не полностью выделен - выделяем его (добавляем к текущему выделению)
+                for (var i = stanzaStart; i <= stanzaEnd; i++) {
+                    document.getElementById('partition_'+i).checked = true;
+                }
             }
             
             setCheck();
@@ -614,7 +628,8 @@ include __DIR__ . '/header.php';
             
             var floatingBtn = document.getElementById('floatingClearBtn');
             if (floatingBtn) {
-                if (hasSelection && !document.body.classList.contains('self-check-mode')) {
+                // Показываем кнопку только если есть выделение, НЕТ воспроизведения и НЕ режим самопроверки
+                if (hasSelection && !playFlag && !document.body.classList.contains('self-check-mode')) {
                     floatingBtn.style.display = 'flex';
                 } else {
                     floatingBtn.style.display = 'none';
@@ -909,6 +924,9 @@ include __DIR__ . '/header.php';
                 toggleBtn.style.opacity = '1';
                 toggleBtn.style.cursor = 'pointer';
             }
+            
+            // Показываем плавающую кнопку если есть выделение
+            updateFloatingClearButton();
             
             // Убираем жирность со всех строк
             var lines = document.querySelectorAll('.verse-line');
@@ -2005,7 +2023,7 @@ include __DIR__ . '/header.php';
                     <button class="quick-btn-toggle" id="toggleSelectBtn" onclick="toggleSelection()">
                         <span class="toggle-text">Выбрать всё</span>
                     </button>
-                    <span class="quick-hint">💡 Двойной клик на строке выделяет весь куплет</span>
+                    <span class="quick-hint">💡 Двойной клик выделяет/снимает куплет</span>
                 </div>
                 <div class="poem-text">
                     <?php 
