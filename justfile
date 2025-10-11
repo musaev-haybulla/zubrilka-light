@@ -78,6 +78,89 @@ git-push MESSAGE:
     git commit -m "{{MESSAGE}}"
     git push origin main
 
+# Слить текущую ветку в main
+merge-to-main:
+    #!/usr/bin/env bash
+    CURRENT_BRANCH=$(git branch --show-current)
+    
+    if [ "$CURRENT_BRANCH" = "main" ]; then
+        echo "❌ Ты уже на main!"
+        exit 1
+    fi
+    
+    echo "🔀 Сливаем $CURRENT_BRANCH в main..."
+    
+    # Проверка незакоммиченных изменений
+    if [[ -n $(git status -s) ]]; then
+        echo "❌ Есть незакоммиченные изменения!"
+        exit 1
+    fi
+    
+    # Пушим текущую ветку
+    echo "⬆️  Push текущей ветки..."
+    git push origin "$CURRENT_BRANCH"
+    
+    # Переключаемся на main
+    echo "🔄 Переключаемся на main..."
+    git checkout main
+    
+    # Обновляем main
+    echo "⬇️  Pull main..."
+    git pull origin main
+    
+    # Сливаем ветку
+    echo "🔀 Сливаем $CURRENT_BRANCH..."
+    git merge "$CURRENT_BRANCH" --no-ff -m "Merge branch '$CURRENT_BRANCH'"
+    
+    # Пушим main
+    echo "⬆️  Push main..."
+    git push origin main
+    
+    echo "✅ Ветка $CURRENT_BRANCH слита в main!"
+    echo "💡 Можешь удалить ветку: just delete-branch $CURRENT_BRANCH"
+
+# Быстрый пуш в main (если уже на main)
+push:
+    #!/usr/bin/env bash
+    CURRENT_BRANCH=$(git branch --show-current)
+    
+    if [ "$CURRENT_BRANCH" != "main" ]; then
+        echo "❌ Ты не на main! Используй: just merge-to-main"
+        exit 1
+    fi
+    
+    echo "⬆️  Push в main..."
+    git push origin main
+    echo "✅ Запушено в main!"
+
+# Удалить ветку (локально и удаленно)
+delete-branch BRANCH:
+    #!/usr/bin/env bash
+    echo "🗑️  Удаляем ветку {{BRANCH}}..."
+    
+    # Удаляем локально
+    git branch -d {{BRANCH}} 2>/dev/null || git branch -D {{BRANCH}}
+    
+    # Удаляем удаленно
+    git push origin --delete {{BRANCH}} 2>/dev/null || echo "Ветка уже удалена на сервере"
+    
+    echo "✅ Ветка {{BRANCH}} удалена!"
+
+# Создать новую ветку
+new-branch NAME:
+    #!/usr/bin/env bash
+    echo "🌿 Создаём новую ветку {{NAME}}..."
+    git checkout -b {{NAME}}
+    echo "✅ Ветка {{NAME}} создана и активна!"
+
+# Показать все ветки
+branches:
+    @echo "🌿 Локальные ветки:"
+    @git branch -v
+    @echo ""
+    @echo "🌍 Удаленные ветки:"
+    @git branch -r
+
 # Очистка временных файлов
 clean:
     #!/usr/bin/env bash
