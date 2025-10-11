@@ -126,3 +126,90 @@ size:
     @echo ""
     @echo "Топ-5 самых больших директорий:"
     @du -sh */ | sort -hr | head -5
+
+# Деплой через SSH (git pull на сервере)
+deploy-ssh HOST USER PATH="/var/www/zubrilka":
+    #!/usr/bin/env bash
+    echo "🚀 Деплой на сервер через SSH..."
+    
+    # Проверка незакоммиченных изменений
+    if [[ -n $(git status -s) ]]; then
+        echo "❌ Есть незакоммиченные изменения!"
+        exit 1
+    fi
+    
+    # Push в репозиторий
+    echo "📤 Push в репозиторий..."
+    git push origin main
+    
+    # Pull на сервере
+    echo "📥 Pull на сервере..."
+    ssh {{USER}}@{{HOST}} "cd {{PATH}} && git pull origin main"
+    
+    echo "✅ Деплой завершён!"
+    echo "🌐 Проверь: https://{{HOST}}"
+
+# Деплой через rsync (без git на сервере)
+deploy-rsync HOST USER PATH="/var/www/zubrilka":
+    #!/usr/bin/env bash
+    echo "🚀 Деплой через rsync..."
+    
+    rsync -avz --delete \
+      --exclude='.git' \
+      --exclude='.DS_Store' \
+      --exclude='.vscode' \
+      --exclude='*.zip' \
+      --exclude='*.sql' \
+      --exclude='justfile' \
+      ./ {{USER}}@{{HOST}}:{{PATH}}/
+    
+    echo "✅ Файлы синхронизированы!"
+    echo "🌐 Проверь: https://{{HOST}}"
+
+# Быстрый деплой (из .env файла)
+deploy:
+    #!/usr/bin/env bash
+    if [ ! -f .env ]; then
+        echo "❌ Файл .env не найден!"
+        echo "Создай его: cp .env.example .env"
+        exit 1
+    fi
+    
+    source .env
+    
+    echo "🚀 Деплой на $DEPLOY_HOST..."
+    just deploy-ssh $DEPLOY_HOST $DEPLOY_USER $DEPLOY_PATH
+
+# Запустить OrbStack/Docker
+docker-start:
+    @echo "🐳 Запуск OrbStack..."
+    @open -a OrbStack || echo "⚠️  OrbStack не установлен"
+
+# Остановить OrbStack/Docker
+docker-stop:
+    @echo "🛑 Остановка OrbStack..."
+    @osascript -e 'quit app "OrbStack"' || echo "⚠️  OrbStack не запущен"
+
+# Статус Docker
+docker-status:
+    @echo "📊 Статус Docker:"
+    @docker ps --format "table {{"{{.Names}}"}}\t{{"{{.Status}}"}}\t{{"{{.Ports}}"}}" 2>/dev/null || echo "❌ Docker не запущен"
+
+# Запустить контейнеры проекта (если есть docker-compose.yml)
+docker-up:
+    @echo "🚀 Запуск контейнеров..."
+    @docker-compose up -d
+
+# Остановить контейнеры проекта
+docker-down:
+    @echo "🛑 Остановка контейнеров..."
+    @docker-compose down
+
+# Логи контейнеров
+docker-logs SERVICE="":
+    #!/usr/bin/env bash
+    if [ -z "{{SERVICE}}" ]; then
+        docker-compose logs -f
+    else
+        docker-compose logs -f {{SERVICE}}
+    fi

@@ -5,15 +5,7 @@
             margin-bottom: 52px;
         }
         .index-hero {
-            text-align: center;
             margin-bottom: 39px;
-        }
-        .index-hero h1 {
-            margin-bottom: 7px;
-            font-size: 48px;
-        }
-        .index-hero small {
-            font-size: 20px;
         }
         .index-card {
             background: #f9fafb;

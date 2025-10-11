@@ -34,6 +34,11 @@ include __DIR__ . '/header.php';
         });
         
         $(window).scroll(function(){
+            // Sticky только для десктопа (ширина > 768px)
+            if ($(window).width() <= 768) {
+                return;
+            }
+            
             var window_top = $(window).scrollTop();
             var $player = $('#player');
 
@@ -207,17 +212,29 @@ include __DIR__ . '/header.php';
         var soundStart = 0;
         var soundEnd = 0;
         var loopMonitorId = null;
+        var howlInstanceCount = 0; // Счётчик созданных экземпляров
         
         // Загрузка аудиофайла
         var loadSoundFile = function(url) {
-            console.log('Загрузка аудио:', url);
+            // Уничтожаем старый экземпляр если есть
+            if (sound) {
+                sound.unload();
+                sound = null;
+            }
+            
+            howlInstanceCount++;
+            
+            // Определяем Safari
+            var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            console.log('🎵 Howl #' + howlInstanceCount + ' | Pool:', Howler._howls.length, '| Safari:', isSafari);
+            
             sound = new Howl({
                 src: [url],
-                html5: true, // Попробуем HTML5 Audio вместо Web Audio API
+                html5: isSafari, // Safari работает лучше с HTML5 Audio
                 preload: true,
                 format: ['mp3'],
+                pool: isSafari ? 5 : 1, // Для Safari увеличиваем пул
                 onload: function() {
-                    console.log('Аудио загружено успешно');
                     document.getElementById('status').innerHTML = '';
                     document.getElementById('status2').innerHTML = '';
                     var playBtn = document.getElementById('playBtn');
@@ -256,6 +273,33 @@ include __DIR__ . '/header.php';
             }
         }
         
+        // Мониторинг позиции для одноразового воспроизведения
+        function monitorOnce() {
+            if (playFlag && sound && sound.playing()) {
+                var currentTime = sound.seek();
+                
+                // Если достигли конца - останавливаем
+                if (typeof currentTime === 'number' && currentTime >= soundEnd) {
+                    sound.stop();
+                    playFlag = 0;
+                    stopHighlighting();
+                    
+                    var playBtn = document.getElementById('playBtn');
+                    playBtn.className = 'btn btn-lg btn-success';
+                    playBtn.innerHTML = 'Запустить';
+                    setCheck();
+                    
+                    if (loopMonitorId) {
+                        cancelAnimationFrame(loopMonitorId);
+                        loopMonitorId = null;
+                    }
+                    return;
+                }
+                
+                loopMonitorId = requestAnimationFrame(monitorOnce);
+            }
+        }
+        
         var play = function(){
             
             if (getSoundStart() === undefined) {
@@ -266,13 +310,9 @@ include __DIR__ . '/header.php';
             playFlag = (+!playFlag);
            
             if (playFlag) {
-                console.log('Начинаем воспроизведение');
-                
-                // Разблокируем AudioContext (для Chrome/Safari)
+                // Разблокируем AudioContext если нужно
                 if (Howler.ctx && Howler.ctx.state === 'suspended') {
-                    Howler.ctx.resume().then(function() {
-                        console.log('AudioContext resumed');
-                    });
+                    Howler.ctx.resume();
                 }
                 
                 var playBtn = document.getElementById('playBtn');
@@ -281,66 +321,39 @@ include __DIR__ . '/header.php';
                 
                 soundStart = getSoundStart();
                 soundEnd = getSoundEnd();
-                console.log('Start:', soundStart, 'End:', soundEnd);
                 
                 var loop = document.getElementById('loop').checked;
                 var speed = currentSpeed;
                 var volume = parseFloat(document.getElementById('points').value);
-                
-                console.log('Loop:', loop, 'Speed:', speed, 'Volume:', volume);
                 
                 // Настраиваем Howler (НЕ используем встроенный loop!)
                 sound.loop(false); // Всегда false, зацикливание делаем вручную
                 sound.rate(speed);
                 sound.volume(volume);
                 
-                console.log('Volume set to:', sound.volume());
-                console.log('Muted:', sound.mute());
-                console.log('Howler global volume:', Howler.volume());
-                console.log('Howler global muted:', Howler._muted);
-                
                 sound.seek(soundStart);
-                
-                console.log('Seek position:', sound.seek());
                 
                 allCheckDisabled();
                 
                 // Запускаем воспроизведение
-                var playId = sound.play();
-                console.log('Play ID:', playId);
+                sound.play();
                 
                 // Запускаем подсветку текущей строки
                 startHighlighting();
                 
-                // Небольшая задержка для проверки состояния
+                // Небольшая задержка для проверки состояния и запуска мониторинга
                 setTimeout(function() {
-                    console.log('Playing state after start:', sound.playing());
-                    console.log('Current position:', sound.seek());
-                    console.log('Sound state:', sound.state());
-                    
                     // Попробуем принудительно установить громкость
                     sound.volume(1.0);
                     Howler.volume(1.0);
-                    console.log('Forced volume to 1.0');
+                    
+                    // Запускаем мониторинг ПОСЛЕ того как звук точно начал играть
+                    if (loop) {
+                        monitorLoop();
+                    } else {
+                        monitorOnce();
+                    }
                 }, 100);
-                
-                if (loop) {
-                    // Для зацикливания следим за позицией
-                    monitorLoop();
-                } else {
-                    // Для одноразового воспроизведения ставим таймер
-                    var duration = (soundEnd - soundStart) / speed;
-                    setTimeout(function() {
-                        if (playFlag && sound.playing()) {
-                            sound.stop();
-                            playFlag = 0;
-                            stopHighlighting();
-                            playBtn.className = 'btn btn-lg btn-success';
-                            playBtn.innerHTML = 'Запустить';
-                            setCheck();
-                        }
-                    }, duration * 1000);
-                }
                 
             } else {
                 if (sound) {
@@ -576,31 +589,7 @@ include __DIR__ . '/header.php';
     </script>
             
     <style>
-        /* Глобальные шрифты */
-        body {
-            font-family: 'Lato', sans-serif;
-        }
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'Lato', sans-serif;
-            font-weight: 700;
-        }
-        h1.page-header {
-            font-family: 'Lato', sans-serif;
-            font-weight: 900;
-        }
-        h1.page-header small {
-            font-family: 'Lato', sans-serif;
-            font-weight: 300;
-            font-style: italic;
-        }
-        .btn, button, input, select, textarea, label {
-            font-family: 'Lato', sans-serif;
-        }
-        /* Название стихотворения */
-        h2 {
-            font-family: 'Lato', sans-serif;
-            font-weight: 700;
-        }
+        /* Специфичные стили только для страницы стиха */
         
         .label_partition_check,
         .label_partition_check span {
@@ -767,7 +756,7 @@ include __DIR__ . '/header.php';
         }
         .verse-line {
             margin-bottom: 6px;
-            line-height: 1.2;
+            line-height: 1;
             transition: all 0.3s ease;
         }
         .verse-line.paragraph-end {
@@ -799,8 +788,8 @@ include __DIR__ . '/header.php';
             background: linear-gradient(to left, transparent, #e5e7eb 20%, #e5e7eb 80%, transparent);
             margin-left: 12px;
         }
-        .stanza-number {
-            font-family: 'Lato', sans-serif;
+        .poem-text {
+            font-family: 'Lora', serif;
             font-size: 11px;
             font-weight: 600;
             color: #9ca3af;
@@ -862,8 +851,9 @@ include __DIR__ . '/header.php';
         .mobile-loop {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-weight: 500;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 16px;
         }
         .mobile-textsize {
             display: flex;
@@ -1001,7 +991,7 @@ include __DIR__ . '/header.php';
             transition: all 0.15s ease;
             font-size: 13px;
             font-weight: 500;
-            font-family: 'Lato', sans-serif;
+            font-family: 'Merriweather', serif;
             min-width: 48px;
             height: 32px;
             margin: 0 3px;
@@ -1056,7 +1046,7 @@ include __DIR__ . '/header.php';
         <!-- /.row -->
 
         <div class="row">
-            <div class="hidden-lg hidden-md hidden-sm col-xs-12">
+            <div class="hidden-lg col-xs-12">
                 <div class="mobile-controls" id="player2"> 
                     <div class="mobile-top-row">
                         <label class="mobile-loop">
@@ -1082,7 +1072,7 @@ include __DIR__ . '/header.php';
                     </div>
                 </div>
             </div>
-            <div class="col-md-8 col-sm-8 col-xs-12">
+            <div class="col-lg-8 col-md-12 col-sm-12 col-xs-12">
                 <div class="quick-selection-panel">
                     <button class="quick-btn-toggle" id="toggleSelectBtn" onclick="toggleSelection()">
                         <span class="toggle-text">Выбрать всё</span>
@@ -1118,7 +1108,7 @@ include __DIR__ . '/header.php';
                     <?php endforeach; ?>
                 </div>   
             </div>
-            <div class="col-md-4 col-sm-4 hidden-xs">
+            <div class="col-lg-4 hidden-md hidden-sm hidden-xs">
                 <div class="desktop-controls" id="player"> 
                     <div class="desktop-top-row">
                         <label class="desktop-loop">

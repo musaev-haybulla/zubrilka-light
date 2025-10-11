@@ -17,11 +17,33 @@
 
     <!-- Custom Fonts -->
     <link href="<?= asset('font-awesome/css/font-awesome.min.css') ?>" rel="stylesheet" type="text/css">
-    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,400italic,300italic,300,600&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&display=swap&subset=cyrillic' rel='stylesheet'>
     <?php if (isset($extra_fonts) && $extra_fonts): ?>
     <link href="https://fonts.googleapis.com/css?family=PT+Sans" rel="stylesheet">
     <?php endif; ?>
     <style>
+        /* Глобальные шрифты для всего сайта */
+        body {
+            font-family: 'Merriweather', serif;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Merriweather', serif;
+        }
+        .btn, button, input, select, textarea {
+            font-family: 'Merriweather', serif;
+        }
+        
+        /* Единый стиль для page-header на всех страницах */
+        h1.page-header {
+            font-family: 'Merriweather', serif;
+            font-weight: 900;
+        }
+        h1.page-header small {
+            font-family: 'Merriweather', serif;
+            font-weight: 400;
+            font-style: italic;
+        }
+        
         .navbar-brand {
             padding: 10px 0;
         }
