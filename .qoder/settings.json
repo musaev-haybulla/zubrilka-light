@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "ask": [
+      "Read(!/Users/musaevhs/Development/zubrilka-light/**)",
+      "Edit(!/Users/musaevhs/Development/zubrilka-light/**)"
+    ],
+    "allow": [
+      "Read(/Users/musaevhs/Development/zubrilka-light/**)",
+      "Edit(/Users/musaevhs/Development/zubrilka-light/**)"
+    ]
+  },
+  "memoryImport": {},
+  "monitoring": {}
+}
