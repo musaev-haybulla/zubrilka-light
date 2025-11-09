@@ -1,4 +1,4 @@
 AuthType Basic
 AuthName "Админ-панель Зубрилки"
-AuthUserFile /var/www/html/admin/.htpasswd
+AuthUserFile /var/www/musevhsx/public_html/zubrilka/admin/.htpasswd
 Require valid-user
