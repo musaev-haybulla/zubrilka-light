@@ -22,3 +22,5 @@ Thumbs.db
 # Config
 .env
 includes/config.php
+\n# Игнорируем локальные конфиги htaccess
+admin/.htaccess
